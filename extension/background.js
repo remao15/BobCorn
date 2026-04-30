@@ -1,0 +1,84 @@
+/**
+ * CartCop Background Service Worker
+ * Calls OpenRouter (Perplexity Sonar) to analyze Amazon products in real time.
+ *
+ * Setup: run this once in the extension's service worker console:
+ *   chrome.storage.local.set({ openrouterKey: 'sk-or-YOUR_KEY_HERE' })
+ */
+
+const MODEL = 'perplexity/sonar';
+const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === 'ANALYZE_PRODUCT') {
+    analyzeProduct(message.payload)
+      .then(sendResponse)
+      .catch(err => sendResponse({ error: err.message }));
+    return true; // keep message channel open for async response
+  }
+});
+
+async function getApiKey() {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(['openrouterKey'], result => {
+      if (result.openrouterKey) resolve(result.openrouterKey);
+      else reject(new Error('API key not configured. See README setup instructions.'));
+    });
+  });
+}
+
+async function analyzeProduct({ url, title, price, rating, reviewCount }) {
+  const apiKey = await getApiKey();
+
+  const prompt = `You are a brutally honest consumer product analyst. Analyze the Amazon product below and respond ONLY with valid JSON — no markdown, no explanation.
+
+Product: ${title}
+Price: ${price}
+Rating: ${rating} (${reviewCount})
+URL: ${url}
+
+Respond with exactly this structure:
+{
+  "bsScore": <integer 0-100>,
+  "brutalTruth": "<1-2 sentence honest verdict>",
+  "alternatives": [
+    {
+      "name": "<product name>",
+      "price": "<price string>",
+      "whyBetter": "<short reason>",
+      "link": "<amazon.com URL>"
+    }
+  ]
+}
+
+bsScore guide: 0-39 = genuine value, 40-69 = mediocre or overpriced, 70-100 = BS rebrand / pure markup.
+Return exactly 3 alternatives. Output only the JSON object.`;
+
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://github.com/remao15/BobCorn',
+      'X-Title': 'CartCop BS Detector'
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      max_tokens: 800
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error(`OpenRouter API error: ${res.status} ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  const raw = data.choices[0].message.content
+    .trim()
+    .replace(/^```(?:json)?\n?/, '')
+    .replace(/\n?```$/, '');
+
+  return JSON.parse(raw);
+}
