@@ -6,6 +6,8 @@
  *   chrome.storage.local.set({ openrouterKey: 'sk-or-YOUR_KEY_HERE' })
  */
 
+importScripts('keys.js');
+
 const MODEL = 'perplexity/sonar';
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -21,8 +23,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 async function getApiKey() {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(['openrouterKey'], result => {
-      if (result.openrouterKey) resolve(result.openrouterKey);
-      else reject(new Error('API key not configured. See README setup instructions.'));
+      if (result.openrouterKey) {
+        resolve(result.openrouterKey);
+      } else if (typeof OPENROUTER_KEY !== 'undefined') {
+        resolve(OPENROUTER_KEY);
+      } else {
+        reject(new Error('API key not configured. See README setup instructions.'));
+      }
     });
   });
 }
