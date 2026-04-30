@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CartCop</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 380px;
+      min-height: 200px;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-icon { font-size: 18px; }
+    .header-title { font-weight: 800; font-size: 14px; letter-spacing: 0.5px; flex: 1; }
+    .header-score {
+      font-weight: 900; font-size: 15px; padding: 3px 9px;
+      border-radius: 6px; color: #fff;
+    }
+    .section { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .section-title {
+      font-weight: 700; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.8px; color: #777; margin-bottom: 8px;
+    }
+    .summary { font-size: 13px; line-height: 1.5; color: #ccc; font-style: italic; }
+    .issue {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 7px 10px; border-radius: 6px;
+      background: rgba(255,255,255,0.04); margin-bottom: 6px;
+    }
+    .issue-sev {
+      font-size: 10px; font-weight: 700; padding: 2px 5px;
+      border-radius: 3px; text-transform: uppercase; white-space: nowrap; margin-top: 1px;
+    }
+    .sev-high   { background: rgba(255,68,68,0.2);  color: #ff6666; }
+    .sev-medium { background: rgba(255,170,0,0.2);  color: #ffbb33; }
+    .sev-low    { background: rgba(0,204,102,0.2);  color: #33dd77; }
+    .issue-type { font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+    .issue-detail { font-size: 12px; color: #bbb; line-height: 1.4; }
+    .alt {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 10px; border-radius: 7px;
+      background: rgba(255,255,255,0.04); margin-bottom: 6px;
+    }
+    .alt:hover { background: rgba(255,255,255,0.08); }
+    .alt-num { font-weight: 900; font-size: 16px; min-width: 20px; line-height: 1.2; }
+    .alt-body { flex: 1; }
+    .alt-name { font-weight: 700; font-size: 13px; color: #fff; }
+    .alt-service { font-size: 11px; color: #777; }
+    .alt-price { font-weight: 700; color: #00cc66; font-size: 12px; margin-left: 4px; }
+    .alt-why { font-size: 11px; color: #999; line-height: 1.4; margin-top: 3px; }
+    .alt-link {
+      font-size: 11px; font-weight: 700; text-decoration: none; padding: 4px 8px;
+      border-radius: 4px; white-space: nowrap; align-self: center;
+      transition: all 0.2s;
+    }
+    .alt-link:hover { opacity: 0.8; }
+    .state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 20px; gap: 10px; color: #555; text-align: center;
+    }
+    .state-icon { font-size: 28px; }
+    .state-label { font-size: 13px; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    .loading-text { animation: pulse 1.5s ease-in-out infinite; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="header-icon">&#128737;&#65039;</span>
+    <span class="header-title">CARTCOP BS DETECTOR</span>
+    <span class="header-score" id="score-badge" style="display:none"></span>
+  </div>
+  <div id="content">
+    <div class="state">
+      <div class="state-icon">&#9203;</div>
+      <div class="state-label loading-text">Loading...</div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

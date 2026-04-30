@@ -1,45 +1,72 @@
 /**
  * CartCop Background Service Worker
- * Calls OpenRouter (Perplexity Sonar) to analyze Amazon products in real time.
- *
- * Setup: run this once in the extension's service worker console:
- *   chrome.storage.local.set({ openrouterKey: 'sk-or-YOUR_KEY_HERE' })
+ * Runs two parallel Nemotron pipelines: page analysis (offline) + alternatives (Tavily-grounded).
  */
 
-importScripts('keys.js');
-importScripts('prompt.js');
+importScripts('keys.js', 'prompts.js');
 
-const MODEL = 'perplexity/sonar';
-const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const MODEL = 'nvidia/nemotron-3-super-120b-a12b';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const TAVILY_SEARCH_URL = 'https://api.tavily.com/search';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === 'ANALYZE_PRODUCT') {
-    analyzeProduct(message.payload)
-      .then(sendResponse)
-      .catch(err => sendResponse({ error: err.message }));
-    return true; // keep message channel open for async response
+  if (message.type === 'PRODUCT_DETECTED') {
+    handleProductAnalysis(message.payload);
+    return false;
+  }
+  if (message.type === 'GET_ANALYSIS') {
+    chrome.storage.session.get(['cartcop_status', 'cartcop_analysis', 'cartcop_error'], result => {
+      sendResponse(result);
+    });
+    return true;
   }
 });
 
-async function getApiKey() {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(['openrouterKey'], result => {
-      if (result.openrouterKey) {
-        resolve(result.openrouterKey);
-      } else if (typeof OPENROUTER_KEY !== 'undefined') {
-        resolve(OPENROUTER_KEY);
-      } else {
-        reject(new Error('API key not configured. See README setup instructions.'));
-      }
-    });
-  });
+async function handleProductAnalysis(payload) {
+  await chrome.storage.session.set({ cartcop_status: 'loading', cartcop_analysis: null, cartcop_error: null });
+  setBadge('...', '#888888');
+
+  try {
+    const { orKey, tvKey } = await getKeys();
+
+    const [pageComments, alternatives] = await Promise.all([
+      runPageComments(payload.pageText, orKey),
+      runAlternatives(payload.title, payload.pageText, orKey, tvKey)
+    ]);
+
+    const analysis = {
+      product: payload.title,
+      url: payload.url,
+      pageComments,
+      alternatives
+    };
+
+    await chrome.storage.session.set({ cartcop_status: 'done', cartcop_analysis: analysis });
+    setBadge('\u2713', '#00cc66');
+  } catch (err) {
+    await chrome.storage.session.set({ cartcop_status: 'error', cartcop_error: err.message });
+    setBadge('!', '#ff4444');
+  }
 }
 
-async function analyzeProduct({ url, title, price, rating, reviewCount }) {
-  const apiKey = await getApiKey();
-  const prompt = buildPrompt({ url, title, price, rating, reviewCount });
+async function runPageComments(pageText, apiKey) {
+  const raw = await callModel(PROMPTS.pageComments(pageText), apiKey);
+  return JSON.parse(raw);
+}
 
-  const res = await fetch(API_URL, {
+async function runAlternatives(title, pageText, orKey, tvKey) {
+  const queriesRaw = await callModel(PROMPTS.alternativeQueries(title, pageText), orKey);
+  const queries = JSON.parse(queriesRaw);
+
+  const searchResults = await Promise.all(queries.map(q => tavilySearch(q, tvKey)));
+  const flatResults = searchResults.flat();
+
+  const filteredRaw = await callModel(PROMPTS.alternativesFilter(title, flatResults), orKey);
+  return JSON.parse(filteredRaw);
+}
+
+async function callModel(prompt, apiKey) {
+  const res = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -50,20 +77,41 @@ async function analyzeProduct({ url, title, price, rating, reviewCount }) {
     body: JSON.stringify({
       model: MODEL,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 800
+      temperature: 0.2,
+      max_tokens: 1200
     })
   });
-
-  if (!res.ok) {
-    throw new Error(`OpenRouter API error: ${res.status} ${res.statusText}`);
-  }
-
+  if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${res.statusText}`);
   const data = await res.json();
-  const raw = data.choices[0].message.content
+  return data.choices[0].message.content
     .trim()
     .replace(/^```(?:json)?\n?/, '')
     .replace(/\n?```$/, '');
+}
 
-  return JSON.parse(raw);
+async function tavilySearch(query, apiKey) {
+  const res = await fetch(TAVILY_SEARCH_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey, query, search_depth: 'basic', max_results: 5 })
+  });
+  if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
+  const data = await res.json();
+  return data.results || [];
+}
+
+async function getKeys() {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(['openrouterKey', 'tavilyKey'], result => {
+      const orKey = result.openrouterKey || (typeof OPENROUTER_KEY !== 'undefined' ? OPENROUTER_KEY : null);
+      const tvKey = result.tavilyKey || (typeof TAVILY_KEY !== 'undefined' ? TAVILY_KEY : null);
+      if (!orKey || !tvKey) reject(new Error('API keys not configured. See README.'));
+      else resolve({ orKey, tvKey });
+    });
+  });
+}
+
+function setBadge(text, color) {
+  chrome.action.setBadgeText({ text });
+  chrome.action.setBadgeBackgroundColor({ color });
 }
