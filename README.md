@@ -1,6 +1,27 @@
-# CartCop: BS Detector
+<p align="center">
+  <img src="0.png" alt="CartCop Logo" width="128" height="128">
+</p>
 
-A browser extension that automatically detects e-commerce product pages and analyzes them in real time — flagging pricing tricks, bad policies, and suspicious claims, while surfacing verified alternatives with live prices.
+<h1 align="center">CartCop: BS Detector</h1>
+
+<p align="center">
+  <strong>A browser extension that automatically detects e-commerce product pages and analyzes them in real time.</strong>
+</p>
+
+<p align="center">
+  🛡️ Flags pricing tricks &nbsp;•&nbsp; 🚨 Spots bad policies &nbsp;•&nbsp; 🔍 Surfaces verified alternatives with live prices
+</p>
+
+---
+
+## Overview
+
+CartCop (also known as **AdCheck**) is a Manifest V3 browser extension that silently monitors the pages you visit. When it detects a product page, it runs two AI pipelines in parallel to:
+
+- **Analyze** the page for BS — inflated claims, shady pricing tactics, weak return policies, and trust issues.
+- **Find** real, grounded alternatives with current prices from across the web.
+
+All analysis happens via a background service worker. No page content is modified until you choose to open the popup.
 
 ---
 
