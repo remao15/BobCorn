@@ -3,7 +3,7 @@
  * Two-pipeline design:
  *   A) Summary — streamed via port to popup (macro)
  *   B) Highlights — async to content script for DOM injection (micro)
- * Also handles persistent storage for Skip & Save and Comparison Mode.
+ * Also handles persistent storage for Skip & Save and history.
  */
 
 importScripts('keys.js', 'prompts.js', 'utils.js');
@@ -11,11 +11,10 @@ importScripts('keys.js', 'prompts.js', 'utils.js');
 const STORAGE_KEY = 'cartcop';
 const MAX_PRODUCTS = 100;
 
-const MODEL = 'minimax/minimax-m2.7:exacto';
+const MODEL = 'google/gemini-2.5-flash-preview';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TAVILY_SEARCH_URL = 'https://api.tavily.com/search';
 
-// Active streaming port reference
 let activeStreamPort = null;
 
 // ==================== PORT CONNECTION (STREAMING) ====================
@@ -23,9 +22,7 @@ let activeStreamPort = null;
 chrome.runtime.onConnect.addListener(port => {
   if (port.name === 'cartcop-stream') {
     activeStreamPort = port;
-    port.onDisconnect.addListener(() => {
-      activeStreamPort = null;
-    });
+    port.onDisconnect.addListener(() => { activeStreamPort = null; });
   }
 });
 
@@ -34,6 +31,11 @@ chrome.runtime.onConnect.addListener(port => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PRODUCT_DETECTED') {
     handleProductAnalysis(message.payload, sender.tab?.id);
+    return false;
+  }
+  if (message.type === 'NON_PRODUCT_PAGE') {
+    chrome.storage.session.set({ cartcop_status: null, cartcop_analysis: null, cartcop_error: null });
+    chrome.action.setBadgeText({ text: '' });
     return false;
   }
   if (message.type === 'GET_ANALYSIS') {
@@ -74,7 +76,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// ==================== PRODUCT ANALYSIS (TWO PIPELINES) ====================
+// ==================== PRODUCT ANALYSIS ====================
 
 async function handleProductAnalysis(payload, tabId) {
   await chrome.storage.session.set({
@@ -88,23 +90,16 @@ async function handleProductAnalysis(payload, tabId) {
   try {
     const { orKey, tvKey } = await getKeys();
 
-    // Pipeline A: Summary (streamed) + Alternatives
-    // Pipeline B: Highlights (async, sent to content script)
-    // Both start simultaneously
+    // Start all three pipelines in parallel
     const summaryPromise = runSummaryStream(payload, orKey);
-    const highlightsPromise = runHighlights(payload, orKey, tabId);
     const alternativesPromise = runAlternatives(payload.title, payload.pageText, orKey, tvKey);
+    const highlightsPromise = runHighlights(payload, orKey, tabId);
 
-    // Wait for summary and alternatives
+    // Popup shows as soon as summary + alternatives are done
     const [summaryResult, alternativesResult] = await Promise.all([
       summaryPromise,
       alternativesPromise
     ]);
-
-    // Wait for highlights (non-blocking for popup)
-    highlightsPromise.catch(err => {
-      console.warn('[CartCop] Highlights pipeline failed:', err);
-    });
 
     const analysis = {
       product: payload.title,
@@ -116,20 +111,19 @@ async function handleProductAnalysis(payload, tabId) {
 
     await chrome.storage.session.set({ cartcop_status: 'done', cartcop_analysis: analysis });
     setBadge('\u2713', '#00cc66');
+
+    // Highlights finish independently — don't block the popup
+    highlightsPromise.catch(err => console.warn('[CartCop] Highlights pipeline failed:', err));
   } catch (err) {
     await chrome.storage.session.set({ cartcop_status: 'error', cartcop_error: err.message });
     setBadge('!', '#ff4444');
-    if (activeStreamPort) {
-      activeStreamPort.postMessage({ type: 'ERROR', error: err.message });
-    }
+    if (activeStreamPort) activeStreamPort.postMessage({ type: 'ERROR', error: err.message });
   }
 }
 
 // ==================== PIPELINE A: SUMMARY (STREAMED) ====================
 
 async function runSummaryStream(payload, apiKey) {
-  const prompt = PROMPTS.summary(payload.pageText);
-
   const res = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
@@ -140,7 +134,7 @@ async function runSummaryStream(payload, apiKey) {
     },
     body: JSON.stringify({
       model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user', content: PROMPTS.summary(payload.pageText) }],
       temperature: 0.2,
       max_tokens: 1200,
       stream: true
@@ -154,93 +148,62 @@ async function runSummaryStream(payload, apiKey) {
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let sseBuffer = '';
   let fullText = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
-    const chunk = decoder.decode(value, { stream: true });
-    buffer += chunk;
-
-    // Parse SSE lines
-    const lines = buffer.split('\n');
-    buffer = lines.pop(); // Keep incomplete line in buffer
+    sseBuffer += decoder.decode(value, { stream: true });
+    const lines = sseBuffer.split('\n');
+    sseBuffer = lines.pop();
 
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed.startsWith('data: ')) continue;
-
       const data = trimmed.slice(6);
       if (data === '[DONE]') continue;
-
       try {
         const parsed = JSON.parse(data);
         const delta = parsed.choices?.[0]?.delta?.content;
         if (delta) {
           fullText += delta;
-          if (activeStreamPort) {
-            activeStreamPort.postMessage({ type: 'CHUNK', text: delta });
-          }
+          if (activeStreamPort) activeStreamPort.postMessage({ type: 'CHUNK', text: delta });
         }
-      } catch {
-        // Ignore parse errors for incomplete chunks
-      }
+      } catch { /* incomplete chunk, skip */ }
     }
   }
 
-  // Try to parse the accumulated text as JSON
+  // Parse accumulated JSON — handle optional markdown fences
   let summary;
+  const cleaned = fullText.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
   try {
-    summary = JSON.parse(fullText.trim());
+    summary = JSON.parse(cleaned);
   } catch {
-    // Try to extract JSON from markdown code blocks
-    const jsonMatch = fullText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      try {
-        summary = JSON.parse(jsonMatch[1].trim());
-      } catch {
-        throw new Error('Failed to parse summary JSON');
-      }
-    } else {
-      throw new Error('Failed to parse summary JSON');
-    }
+    throw new Error(`Failed to parse summary JSON. Raw: ${fullText.slice(0, 200)}`);
   }
 
-  if (activeStreamPort) {
-    activeStreamPort.postMessage({ type: 'DONE', data: summary });
-  }
-
+  if (activeStreamPort) activeStreamPort.postMessage({ type: 'DONE', data: summary });
   return summary;
 }
 
 // ==================== PIPELINE B: HIGHLIGHTS (ASYNC) ====================
 
 async function runHighlights(payload, apiKey, tabId) {
-  if (!tabId) {
-    console.warn('[CartCop] No tabId for highlights');
-    return;
-  }
-
+  if (!tabId) return;
   try {
     const raw = await callModel(PROMPTS.highlights(payload.pageText), apiKey);
     const result = JSON.parse(raw);
-
-    // Store highlights in session storage
-    await chrome.storage.session.set({ cartcop_highlights: result.highlights || [] });
-
-    // Send to content script
-    chrome.tabs.sendMessage(tabId, {
-      type: 'HIGHLIGHTS_READY',
-      highlights: result.highlights || []
-    });
+    const highlights = result.highlights || [];
+    await chrome.storage.session.set({ cartcop_highlights: highlights });
+    chrome.tabs.sendMessage(tabId, { type: 'HIGHLIGHTS_READY', highlights });
   } catch (err) {
-    console.warn('[CartCop] Highlights failed:', err);
+    console.warn('[CartCop] Highlights failed:', err.message);
   }
 }
 
-// ==================== ALTERNATIVES ====================
+// ==================== PIPELINE C: ALTERNATIVES (TAVILY) ====================
 
 async function runAlternatives(title, pageText, orKey, tvKey) {
   const queriesRaw = await callModel(PROMPTS.alternativeQueries(title, pageText), orKey);
@@ -253,7 +216,7 @@ async function runAlternatives(title, pageText, orKey, tvKey) {
   return JSON.parse(filteredRaw);
 }
 
-// ==================== MODEL CALL (NON-STREAMING) ====================
+// ==================== MODEL CALL (NON-STREAMING, JSON MODE) ====================
 
 async function callModel(prompt, apiKey) {
   const res = await fetch(OPENROUTER_URL, {
@@ -279,16 +242,9 @@ async function callModel(prompt, apiKey) {
   }
 
   const data = await res.json();
-
-  if (!data.choices?.length) {
-    throw new Error(`No choices in OpenRouter response: ${JSON.stringify(data)}`);
-  }
-
+  if (!data.choices?.length) throw new Error(`No choices returned: ${JSON.stringify(data)}`);
   const content = data.choices[0].message?.content;
-  if (!content || content.trim() === '') {
-    throw new Error('Empty content in OpenRouter response');
-  }
-
+  if (!content?.trim()) throw new Error('Empty content in OpenRouter response');
   return content.trim();
 }
 
@@ -319,35 +275,27 @@ function setBadge(text, color) {
   chrome.action.setBadgeBackgroundColor({ color });
 }
 
-// ==================== PERSISTENT STORAGE LAYER ====================
+// ==================== PERSISTENT STORAGE ====================
 
 async function getStorage() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     chrome.storage.local.get([STORAGE_KEY], result => {
-      const data = result[STORAGE_KEY] || {
-        products: [],
-        totalSaved: 0,
-        totalAnalyzed: 0
-      };
-      resolve(data);
+      resolve(result[STORAGE_KEY] || { products: [], totalSaved: 0, totalAnalyzed: 0 });
     });
   });
 }
 
 async function setStorage(data) {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [STORAGE_KEY]: data }, resolve);
-  });
+  return new Promise(resolve => chrome.storage.local.set({ [STORAGE_KEY]: data }, resolve));
 }
 
 async function saveAnalysis(payload, analysis) {
   const storage = await getStorage();
   const id = hashUrl(payload.url);
   const now = Date.now();
-
   const existingIndex = storage.products.findIndex(p => p.id === id);
 
-  const productEntry = {
+  const entry = {
     id,
     url: payload.url,
     title: payload.title,
@@ -362,54 +310,40 @@ async function saveAnalysis(payload, analysis) {
   };
 
   if (existingIndex !== -1) {
-    const existing = storage.products[existingIndex];
-    productEntry.skipped = existing.skipped;
-    productEntry.skippedAt = existing.skippedAt;
-    productEntry.moneySaved = existing.moneySaved;
-    storage.products[existingIndex] = productEntry;
+    const prev = storage.products[existingIndex];
+    entry.skipped = prev.skipped;
+    entry.skippedAt = prev.skippedAt;
+    entry.moneySaved = prev.moneySaved;
+    storage.products[existingIndex] = entry;
   } else {
     if (storage.products.length >= MAX_PRODUCTS) {
-      const nonSkippedIndex = storage.products.findIndex(p => !p.skipped);
-      if (nonSkippedIndex !== -1) {
-        storage.products.splice(nonSkippedIndex, 1);
-      } else {
-        storage.products.shift();
-      }
+      const nonSkippedIdx = storage.products.findIndex(p => !p.skipped);
+      storage.products.splice(nonSkippedIdx !== -1 ? nonSkippedIdx : 0, 1);
     }
-    storage.products.push(productEntry);
+    storage.products.push(entry);
     storage.totalAnalyzed++;
   }
 
   await setStorage(storage);
-  return productEntry;
+  return entry;
 }
 
 async function markSkipped(id) {
   const storage = await getStorage();
   const index = storage.products.findIndex(p => p.id === id);
-
-  if (index === -1) {
-    throw new Error('Product not found in history');
-  }
+  if (index === -1) throw new Error('Product not found in history');
 
   const product = storage.products[index];
-
-  if (product.skipped) {
-    return product;
-  }
+  if (product.skipped) return product;
 
   const moneySaved = parsePrice(product.price);
   product.skipped = true;
   product.skippedAt = Date.now();
   product.moneySaved = moneySaved;
-
-  if (moneySaved !== null) {
-    storage.totalSaved = (storage.totalSaved || 0) + moneySaved;
-  }
+  if (moneySaved !== null) storage.totalSaved = (storage.totalSaved || 0) + moneySaved;
 
   storage.products[index] = product;
   await setStorage(storage);
-
   return product;
 }
 
@@ -424,9 +358,5 @@ async function getProduct(id) {
 }
 
 async function clearHistory() {
-  await setStorage({
-    products: [],
-    totalSaved: 0,
-    totalAnalyzed: 0
-  });
+  await setStorage({ products: [], totalSaved: 0, totalAnalyzed: 0 });
 }
