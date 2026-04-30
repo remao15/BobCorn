@@ -4,8 +4,15 @@
   "version": "1.0.0",
   "description": "A brutal, on-the-spot product evaluator. Detects BS on Amazon and pushes verified, superior alternatives.",
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
+  "host_permissions": [
+    "https://openrouter.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -16,7 +23,6 @@
         "*://*.amazon.fr/*"
       ],
       "js": [
-        "mockData.js",
         "content.js"
       ],
       "run_at": "document_idle"
