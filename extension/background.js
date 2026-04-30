@@ -83,7 +83,9 @@ async function callModel(prompt, apiKey) {
   });
   if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${res.statusText}`);
   const data = await res.json();
-  return data.choices[0].message.content
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response from OpenRouter API');
+  return content
     .trim()
     .replace(/^```(?:json)?\n?/, '')
     .replace(/\n?```$/, '');
