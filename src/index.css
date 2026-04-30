@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(10, 10, 10, 0.08) 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+  ::selection {
+    @apply bg-acid text-ink;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-ink text-paper font-display font-bold px-6 py-3 border-2 border-ink shadow-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all duration-150;
+  }
+  .btn-acid {
+    @apply inline-flex items-center justify-center gap-2 bg-acid text-ink font-display font-bold px-6 py-3 border-2 border-ink shadow-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all duration-150;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 bg-transparent text-ink font-display font-bold px-6 py-3 border-2 border-ink hover:bg-ink hover:text-paper transition-colors duration-150;
+  }
+  .card-brutal {
+    @apply bg-paper border-2 border-ink shadow-brutal;
+  }
+  .tag {
+    @apply inline-flex items-center gap-1.5 bg-ink text-paper text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-1 border-2 border-ink;
+  }
+  .tag-acid {
+    @apply inline-flex items-center gap-1.5 bg-acid text-ink text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-1 border-2 border-ink;
+  }
+}
