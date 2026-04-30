@@ -46,7 +46,3 @@ This project was built rapidly in a 2-hour hackathon environment using parallel 
 * **Branch 4 (The Subscription Dashboard):** Single HTML page dashboard built with Tailwind CDN to parse JSON data, calculate "Total Wasted", and render migration UI.
 
 ---
-
-## Team 
-* **Aldo** - [@heron4gf](https://github.com/heron4gf)
-* **Suter Gabriel** - [@SuterGabriel](https://github.com/SuterGabriel)

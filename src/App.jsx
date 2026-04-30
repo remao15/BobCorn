@@ -14,11 +14,23 @@ import CTA from './components/CTA'
 import Sources from './components/Sources'
 import Footer from './components/Footer'
 import EarlyAccessModal from './components/EarlyAccessModal'
+import ScannerTest from './components/scanner/ScannerTest'
 
 export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
   const openModal = useCallback(() => setModalOpen(true), [])
   const closeModal = useCallback(() => setModalOpen(false), [])
+  
+  // Toggle between marketing site and scanner test
+  const [showTest, setShowTest] = useState(false)
+
+  // Check if we're in test mode via URL
+  const urlParams = new URLSearchParams(window.location.search)
+  const testMode = urlParams.has('test') || urlParams.has('session') || showTest
+
+  if (testMode) {
+    return <ScannerTest />
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,6 +51,16 @@ export default function App() {
       </main>
       <Footer />
       <EarlyAccessModal open={modalOpen} onClose={closeModal} />
+      
+      {/* Test mode toggle - remove in production */}
+      <button
+        onClick={() => setShowTest(true)}
+        className="fixed bottom-4 right-4 px-4 py-2 bg-blood text-paper border-2 border-ink font-bold text-sm shadow-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all z-50"
+      >
+        🧪 Test Scanner
+      </button>
     </div>
   )
 }
+
+// Made with Bob
