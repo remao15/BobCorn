@@ -1,52 +1,151 @@
-# CartCop: BS Detector & Subscription Auditor
+# CartCop: BS Detector
 
-## The Core Concept
-A two-pronged financial reality-check tool built to save users from frictionless buying and subscription amnesia.
-* **The BS Detector (Free Extension):** A brutal, on-the-spot product evaluator. You view an item; the extension instantly aggregates sentiment, calls out fake reviews, grades the product's actual quality, and pushes verified, superior alternatives to the screen.
-* **The Subscription Auditor (Paid Platform):** A web dashboard that scans your recurring charges, flags overpriced services, and actively suggests migrations (e.g., "Drop X, move to Y and save $15/mo").
-
-## The Pain Points Addressed
-* **Review Manipulation:** Product reviews are rigged. Buyers need an instant, unbiased reality check before pulling the trigger.
-* **Service Complacency:** People stick with bloated subscriptions because researching cheaper, better alternatives takes too much effort.
-
-## Business Model
-* **Free Tier:** Affiliate revenue. When the extension tells them the current product is garbage and they buy your recommended alternative, you take a cut.
-* **Paid Tier:** Subscription fee. Automates the financial audit and provides direct cancellation or migration workflows.
+A browser extension that automatically detects e-commerce product pages and analyzes them in real time — flagging pricing tricks, bad policies, and suspicious claims, while surfacing verified alternatives with live prices.
 
 ---
 
-## Hackathon Pitch & SDLC Pipeline
+## How It Works
 
-**1. Plan & Analyze (The Problem)**
-We identified that frictionless 1-click buying and fake reviews trick users into wasting money. The problem matters because consumers lack an instant, unbiased reality check at the point of sale.
-
-**2. Design (The Solution & UX)**
-We designed a disruptive but clean UX: a 'BS Detector' overlay that injects itself directly onto Amazon/Shopify pages right before checkout, forcing a moment of reflection with better alternatives.
-
-**3. Develop (What we built & HOW BOB HELPED)**
-We built a Manifest V3 browser extension and a web dashboard. We used Bob extensively here: Bob generated our DOM-scraping logic for Amazon, built our extension boilerplate, and helped us structure the mock JSON databases to simulate our API endpoints.
-
-**4. Test (Validation)**
-We validated the prototype locally, testing the DOM injection on live Amazon pages to ensure our overlay triggers correctly on target URLs without breaking the host site's CSS or functionality.
-
-**5. Deploy (Shipping it)**
-To ship to real users, our deployment plan involves publishing the extension to the Chrome Web Store and swapping our mock JSON files for live Perplexity and Plaid API integrations.
-
-**6. Maintain (The Demo)**
-Live demonstration of the "Golden Path": Open the mocked Amazon URL -> show the BS Detector overlay -> click the alternative -> switch to the Subscription dashboard.
+1. **Local heuristics** in `content.js` silently check every page for product signals (Schema.org, OpenGraph, URL patterns, cart buttons, price elements). No API call is made unless ≥2 signals fire.
+2. When a product page is confirmed, two AI pipelines run **in parallel** via background service worker:
+   - **Page Analysis** — Nemotron 3 Super reads the full page text offline and returns a structured verdict: BS score, issues by severity, and an honest summary.
+   - **Alternatives** — an agentic flow generates search queries, runs them through Tavily, then filters the results to return 3 real, grounded alternatives with prices and links.
+3. The extension icon badges `...` → `✓` (or `!` on error). Click the icon to open the popup and read the analysis.
 
 ---
 
-## Technical Execution & Agent Workflow
-This project was built rapidly in a 2-hour hackathon environment using parallel agent branches:
+## Tech Stack
 
-* **Branch 1 (Extension Foundation):** Setup `manifest.json` (Manifest V3) and basic `content.js` file for Amazon URL targeting.
-* **Branch 2 (The BS Detector Overlay):** UI injection logic, creating a high-contrast HTML `<div>` directly into the DOM above the "Add to Cart" button.
-* **Branch 3 (Mock Data Engine):** Hardcoded JSON generation (`mock_alternatives.json` and `mock_subscriptions.json`) to simulate Perplexity outputs and Plaid banking data.
-* **Branch 4 (The Subscription Dashboard):** Single HTML page dashboard built with Tailwind CDN to parse JSON data, calculate "Total Wasted", and render migration UI.
+| Layer | Technology |
+|---|---|
+| Extension | Manifest V3, Chrome APIs |
+| Detection | Local heuristics (zero cost, zero latency) |
+| AI model | `nvidia/nemotron-3-super-120b-a12b` via OpenRouter |
+| Web search | Tavily Search API |
+| Prompts | `prompts.js` — fully editable |
 
 ---
 
-## Team 
-* **Aldo** - [@heron4gf](https://github.com/heron4gf)
-* **Suter Gabriel** - [@SuterGabriel](https://github.com/SuterGabriel)
+## Installation
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/remao15/BobCorn.git
+cd BobCorn
+git checkout phase1
+```
+
+### 2. Configure API keys
+
+Copy the example keys file and fill in your credentials:
+
+```bash
+cp extension/keys.example.js extension/keys.js
+```
+
+Then open `extension/keys.js` and replace the placeholders:
+
+```js
+const OPENROUTER_KEY = 'sk-or-YOUR_KEY_HERE';  // https://openrouter.ai/keys
+const TAVILY_KEY     = 'tvly-YOUR_KEY_HERE';   // https://app.tavily.com
+```
+
+> `keys.js` is gitignored and will never be committed.
+
+**Alternatively**, set keys at runtime via the Chrome service worker console:
+
+1. Go to `chrome://extensions`
+2. Find CartCop → click **Inspect service worker**
+3. Run in the console:
+
+```js
+chrome.storage.local.set({
+  openrouterKey: 'sk-or-YOUR_KEY_HERE',
+  tavilyKey: 'tvly-YOUR_KEY_HERE'
+});
+```
+
+### 3. Load the extension in Chrome
+
+1. Go to `chrome://extensions`
+2. Enable **Developer mode** (top right toggle)
+3. Click **Load unpacked**
+4. Select the `extension/` folder inside this repo
+
+---
+
+## Usage
+
+1. Navigate to any product page (Amazon, Zalando, MediaMarkt, Shopify stores, etc.)
+2. The extension icon will badge `...` — analysis is running
+3. When it turns `✓`, click the icon to open the CartCop popup
+4. Read the verdict, issues, and alternatives
+
+---
+
+## Customizing Prompts
+
+All AI prompts are in `extension/prompts.js`. Edit the three functions to change how the model analyzes pages or generates alternatives — no other file needs touching.
+
+| Prompt | Purpose |
+|---|---|
+| `PROMPTS.pageComments(pageText)` | Offline page analysis — verdict, BS score, issues |
+| `PROMPTS.alternativeQueries(title, pageText)` | Generates 3 Tavily search queries |
+| `PROMPTS.alternativesFilter(title, results)` | Filters search results into 3 structured alternatives |
+
+---
+
+## Project Structure
+
+```
+extension/
+├── manifest.json       # Extension config, permissions, popup declaration
+├── content.js          # Local heuristic product detection (no DOM changes)
+├── background.js       # Service worker — runs both AI pipelines
+├── prompts.js          # All editable AI prompt templates
+├── popup.html          # Popup UI shell
+├── popup.js            # Popup rendering and polling logic
+├── keys.js             # Your API keys (gitignored — do not commit)
+└── keys.example.js     # Keys template to copy from
+```
+
+---
+
+## Output Schema
+
+### Page Analysis
+```json
+{
+  "verdict": "CLEAN | WARNING | SUSPICIOUS",
+  "bsScore": 0,
+  "summary": "One honest sentence about this product.",
+  "issues": [
+    {
+      "type": "pricing | policy | quality | trust | claim",
+      "severity": "high | medium | low",
+      "detail": "Specific observation."
+    }
+  ]
+}
+```
+
+### Alternatives
+```json
+[
+  {
+    "name": "Product Name",
+    "service": "Platform or Store",
+    "price": "€29.99",
+    "whyBetter": "One sentence reason.",
+    "url": "https://..."
+  }
+]
+```
+
+---
+
+## Team
+
+- **Aldo** — [@heron4gf](https://github.com/heron4gf)
+- **Suter Gabriel** — [@SuterGabriel](https://github.com/SuterGabriel)
