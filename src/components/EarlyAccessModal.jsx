@@ -121,10 +121,13 @@ export default function EarlyAccessModal({ open, onClose }) {
         aria-labelledby="ea-title"
       >
         <header className="flex items-center justify-between gap-3 px-5 py-3 bg-ink text-paper border-b-2 border-ink">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="grid place-items-center w-8 h-8 bg-acid text-ink border-2 border-acid font-display font-bold text-sm shrink-0">
-              BS
-            </span>
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src="/logo-removebg-preview.png"
+              alt=""
+              aria-hidden="true"
+              className="h-12 w-auto bg-paper border-2 border-paper p-0.5 shrink-0"
+            />
             <div className="min-w-0">
               <div id="ea-title" className="font-display font-bold text-base leading-none">
                 adCheck. Test it out
@@ -233,7 +236,7 @@ function LoadingBubble() {
   return (
     <div className="flex items-center gap-3 animate-fade-up">
       <div className="grid place-items-center w-8 h-8 bg-acid text-ink border-2 border-ink font-display font-bold text-xs shrink-0">
-        BS
+        aC
       </div>
       <div className="card-brutal bg-paper px-3 py-2 flex items-center gap-2 font-mono text-xs">
         <span>Analyzing</span>
@@ -305,7 +308,7 @@ function BotResult({ data, sourceUrl }) {
   return (
     <div className="flex items-start gap-3 animate-fade-up">
       <div className="grid place-items-center w-8 h-8 bg-acid text-ink border-2 border-ink font-display font-bold text-xs shrink-0">
-        BS
+        aC
       </div>
       <div className="flex-1 min-w-0 space-y-3">
         <div className="card-brutal bg-ink text-paper p-4 sm:p-5 border-t-[5px] border-t-blood">
