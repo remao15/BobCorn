@@ -5,7 +5,7 @@
 
 importScripts('keys.js', 'prompts.js');
 
-const MODEL = 'google/gemini-3-flash-preview:nitro';
+const MODEL = 'minimax/minimax-m2.7:exacto';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TAVILY_SEARCH_URL = 'https://api.tavily.com/search';
 
