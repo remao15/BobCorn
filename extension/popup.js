@@ -472,19 +472,19 @@ async function poll() {
       return;
     }
     
-    if (result.cartcop_status === 'loading') {
+    if (result.adcheck_status === 'loading') {
       renderState('\u23F3', '<span class="loading-text">Analyzing product...</span>');
       setTimeout(poll, POLL_INTERVAL);
       return;
     }
     
-    if (result.cartcop_status === 'error') {
-      renderState('\u274C', result.cartcop_error || 'An error occurred.');
+    if (result.adcheck_status === 'error') {
+      renderState('\u274C', result.adcheck_error || 'An error occurred.');
       return;
     }
     
-    if (result.cartcop_status === 'done' && result.cartcop_analysis) {
-      const analysis = result.cartcop_analysis;
+    if (result.adcheck_status === 'done' && result.adcheck_analysis) {
+      const analysis = result.adcheck_analysis;
       const productId = hashUrl(analysis.url);
       
       // Check if this product is already in history and skipped

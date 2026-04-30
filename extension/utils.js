@@ -1,5 +1,5 @@
 /**
- * CartCop Shared Utilities
+ * AdCheck Shared Utilities
  */
 
 /**
@@ -157,7 +157,7 @@ function getVerdictColor(verdict) {
 
 // Export for use in other scripts
 if (typeof window !== 'undefined') {
-  window.CartCopUtils = {
+  window.AdCheckUtils = {
     parsePrice,
     hashUrl,
     formatDate,

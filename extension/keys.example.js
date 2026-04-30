@@ -1,5 +1,5 @@
 /**
- * CartCop API Key Setup
+ * AdCheck API Key Setup
  *
  * DO NOT commit keys.js — it is gitignored.
  *

@@ -1,4 +1,4 @@
-// CartCop Comparison Page Logic
+// AdCheck Comparison Page Logic
 
 let product1 = null;
 let product2 = null;

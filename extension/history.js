@@ -1,4 +1,4 @@
-// CartCop History Page Logic
+// AdCheck History Page Logic
 
 let allProducts = [];
 let selectedIds = new Set();
