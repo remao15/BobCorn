@@ -8,6 +8,7 @@ export default function ScannerTest() {
   const [sessionId, setSessionId] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(null);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
 
@@ -73,6 +74,8 @@ export default function ScannerTest() {
     try {
       setScanning(true);
       setError(null);
+      setResults(null);
+      setScanProgress({ step: 'Connecting to Gmail...', details: '' });
 
       const response = await fetch('/api/scan/gmail', {
         method: 'POST',
@@ -89,11 +92,14 @@ export default function ScannerTest() {
 
       if (response.ok) {
         setResults(data);
+        setScanProgress(null);
       } else {
         setError(data.error || 'Scan failed');
+        setScanProgress(null);
       }
     } catch (err) {
       setError(`Scan error: ${err.message}`);
+      setScanProgress(null);
     } finally {
       setScanning(false);
     }
@@ -104,10 +110,10 @@ export default function ScannerTest() {
       <div className="max-w-4xl mx-auto">
         <div className="card-brutal p-8 bg-paper">
           <h1 className="font-display font-bold text-3xl mb-2">
-            Gmail Scanner Test
+            Gmail Scanner
           </h1>
           <p className="text-ink/70 mb-6">
-            Minimal UI to test OAuth and scanning functionality
+            Find all subscriptions linked to your e-mail address.
           </p>
 
           {/* Status */}
@@ -116,7 +122,7 @@ export default function ScannerTest() {
               <div>
                 <strong>Session:</strong>{' '}
                 {sessionId ? (
-                  <span className="text-cash">✓ Active ({sessionId.slice(0, 8)}...)</span>
+                  <span className="text-cash">Dev Mode</span>
                 ) : (
                   <span className="text-blood">✗ Not authenticated</span>
                 )}
@@ -151,12 +157,20 @@ export default function ScannerTest() {
             </button>
           </div>
 
-          {/* Results */}
+          {/* Progress */}
           {scanning && (
             <div className="p-6 border-2 border-ink bg-acid/20">
-              <div className="font-bold mb-2">Scanning your inbox...</div>
-              <div className="text-sm text-ink/70">
-                Running multi-strategy search across your emails
+              <div className="font-bold mb-2">
+                {scanProgress?.step || 'Scanning your inbox...'}
+              </div>
+              {scanProgress?.details && (
+                <div className="text-sm text-ink/70 mt-2">
+                  {scanProgress.details}
+                </div>
+              )}
+              <div className="mt-3 flex items-center gap-2">
+                <div className="animate-spin h-4 w-4 border-2 border-ink border-t-transparent rounded-full"></div>
+                <span className="text-sm">Please wait...</span>
               </div>
             </div>
           )}
@@ -165,22 +179,41 @@ export default function ScannerTest() {
             <div className="space-y-4">
               {/* Stats */}
               <div className="p-4 border-2 border-ink bg-cash/20">
-                <div className="font-bold mb-2">Scan Complete</div>
-                <div className="grid grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <div className="font-mono text-2xl">{results.stats.total}</div>
-                    <div className="text-ink/70">Total</div>
+                <div className="font-bold mb-3">✓ Scan Complete</div>
+                
+                {/* Processing Pipeline */}
+                <div className="mb-4 text-sm space-y-2 bg-paper/50 p-3 border border-ink/20">
+                  <div className="flex justify-between">
+                    <span className="text-ink/70">Initial emails found:</span>
+                    <span className="font-mono font-bold">{results.stats.initialEmails}</span>
                   </div>
-                  <div>
-                    <div className="font-mono text-2xl">{results.stats.paid}</div>
+                  <div className="flex justify-between">
+                    <span className="text-ink/70">→ Unique emails:</span>
+                    <span className="font-mono font-bold">{results.stats.uniqueEmails}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ink/70">→ Unique senders:</span>
+                    <span className="font-mono font-bold">{results.stats.uniqueSenders}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-ink/20 pt-2">
+                    <span className="text-ink/70">→ Final subscriptions:</span>
+                    <span className="font-mono font-bold text-cash">{results.stats.total}</span>
+                  </div>
+                </div>
+                
+                {/* Breakdown */}
+                <div className="font-bold mb-2 text-sm">Breakdown:</div>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="bg-paper/50 p-2 border border-ink/20">
+                    <div className="font-mono text-xl font-bold">{results.stats.paid}</div>
                     <div className="text-ink/70">Paid</div>
                   </div>
-                  <div>
-                    <div className="font-mono text-2xl">{results.stats.newsletters}</div>
+                  <div className="bg-paper/50 p-2 border border-ink/20">
+                    <div className="font-mono text-xl font-bold">{results.stats.newsletters}</div>
                     <div className="text-ink/70">Newsletters</div>
                   </div>
-                  <div>
-                    <div className="font-mono text-2xl">{results.stats.unclassified}</div>
+                  <div className="bg-paper/50 p-2 border border-ink/20">
+                    <div className="font-mono text-xl font-bold">{results.stats.unclassified}</div>
                     <div className="text-ink/70">Unclassified</div>
                   </div>
                 </div>
@@ -249,46 +282,17 @@ export default function ScannerTest() {
 }
 
 function SubscriptionCard({ subscription }) {
-  const tierColors = {
-    1: 'bg-cash/20 border-cash',
-    2: 'bg-acid/20 border-acid',
-    3: 'bg-bone border-ink',
-    4: 'bg-paper border-ink/30'
-  };
-
-  const confidenceLabels = {
-    high: '✓ High',
-    medium: '~ Medium',
-    low: '? Low',
-    very_low: '? Very Low'
-  };
-
   return (
-    <div className={`p-3 border-2 ${tierColors[subscription.tier] || 'border-ink'}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="font-bold truncate">
-            {subscription.service.name}
-          </div>
-          <div className="text-sm text-ink/70 truncate">
-            {subscription.from}
-          </div>
-          <div className="text-sm text-ink/60 mt-1 truncate">
-            {subscription.subject}
-          </div>
+    <div className="p-3 border-2 border-ink bg-paper">
+      <div className="flex-1 min-w-0">
+        <div className="font-bold truncate">
+          {subscription.service.name}
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-xs font-mono text-ink/60">
-            Tier {subscription.tier}
-          </div>
-          <div className="text-xs font-mono text-ink/60">
-            {confidenceLabels[subscription.confidence]}
-          </div>
-          {subscription.service.category !== 'unknown' && (
-            <div className="text-xs mt-1 px-2 py-0.5 bg-ink text-paper">
-              {subscription.service.category}
-            </div>
-          )}
+        <div className="text-sm text-ink/70 truncate">
+          {subscription.from}
+        </div>
+        <div className="text-sm text-ink/60 mt-1 truncate">
+          {subscription.subject}
         </div>
       </div>
     </div>

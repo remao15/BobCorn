@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     ];
     
     // Run all searches in parallel
-    console.log('Starting multi-strategy inbox scan...');
+    console.log('Step 1: Searching inbox with multiple strategies...');
     const searchResults = await Promise.all(
       strategies.map(strategy => searchGmail(gmail, strategy.query, strategy.name))
     );
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     });
     
     const uniqueMessageIds = Array.from(messageMap.keys());
-    console.log(`Total messages found: ${totalFound}, Unique: ${uniqueMessageIds.length}`);
+    console.log(`✓ Found ${totalFound} total emails, ${uniqueMessageIds.length} unique`);
     
     if (uniqueMessageIds.length === 0) {
       return res.status(200).json({
@@ -128,30 +128,35 @@ export default async function handler(req, res) {
     }
     
     // Fetch metadata for all unique messages (batch processing)
-    console.log('Fetching message metadata...');
+    console.log('Step 2: Fetching email metadata...');
     const messages = await fetchMessageMetadata(gmail, uniqueMessageIds);
+    console.log(`✓ Retrieved ${messages.length} email details`);
     
     // Deduplicate by sender domain
-    console.log('Deduplicating by domain...');
+    console.log('Step 3: Deduplicating by sender domain...');
     const deduplicated = deduplicateByDomain(messages);
-    console.log(`After deduplication: ${deduplicated.length} unique subscriptions`);
+    console.log(`✓ ${deduplicated.length} unique senders (removed ${messages.length - deduplicated.length} duplicates)`);
     
     // Classify each subscription
-    console.log('Classifying subscriptions...');
-    const classified = deduplicated.map(msg => classifySubscription(msg));
+    console.log('Step 4: Classifying subscriptions...');
+    const classified = deduplicated.map(msg => classifySubscription(msg)).filter(c => c !== null);
+    console.log(`✓ Classified ${classified.length} subscriptions (filtered ${deduplicated.length - classified.length} non-subscriptions)`);
     
     // Group by tier
     const grouped = groupByTier(classified);
     
     // Calculate stats
     const stats = {
+      initialEmails: totalFound,
+      uniqueEmails: uniqueMessageIds.length,
+      uniqueSenders: deduplicated.length,
       total: classified.length,
       paid: grouped.paid.length,
       newsletters: grouped.newsletters.length,
       unclassified: grouped.unclassified.length
     };
     
-    console.log('Scan complete:', stats);
+    console.log('✓ Scan complete:', stats);
     
     return res.status(200).json({
       success: true,
@@ -265,6 +270,112 @@ function buildKnownSendersQuery() {
   const selectedDomains = domains.slice(0, 50);
   
   return `from:(${selectedDomains.join(' OR ')})`;
+}
+
+/**
+ * STAGE 2: Verify paid subscriptions by reading full email content
+ * @param {object} gmail - Gmail API client
+ * @param {array} paidSubscriptions - Subscriptions classified as "paid"
+ * @returns {array} Verified paid subscriptions
+ */
+async function verifyPaidSubscriptions(gmail, paidSubscriptions) {
+  const verified = [];
+  
+  for (const sub of paidSubscriptions) {
+    try {
+      // Fetch full email content
+      const response = await gmail.users.messages.get({
+        userId: 'me',
+        id: sub.id,
+        format: 'full'
+      });
+      
+      // Extract email body
+      let emailBody = '';
+      const payload = response.data.payload;
+      
+      if (payload.body?.data) {
+        emailBody = Buffer.from(payload.body.data, 'base64').toString('utf-8');
+      } else if (payload.parts) {
+        for (const part of payload.parts) {
+          if (part.mimeType === 'text/plain' && part.body?.data) {
+            emailBody = Buffer.from(part.body.data, 'base64').toString('utf-8');
+            break;
+          } else if (part.mimeType === 'text/html' && part.body?.data && !emailBody) {
+            emailBody = Buffer.from(part.body.data, 'base64').toString('utf-8');
+          }
+        }
+      }
+      
+      // Clean HTML tags and normalize
+      const cleanBody = emailBody.replace(/<[^>]*>/g, ' ').toLowerCase();
+      
+      // Check if it's actually a subscription (not promo/marketing)
+      const isActualSubscription = analyzeEmailContent(cleanBody, sub.subject);
+      
+      if (isActualSubscription) {
+        verified.push({
+          ...sub,
+          verified: true,
+          snippet: cleanBody.substring(0, 300).trim()
+        });
+      } else {
+        console.log(`Filtered out non-subscription: ${sub.subject}`);
+      }
+      
+    } catch (err) {
+      console.error(`Error verifying subscription ${sub.id}:`, err.message);
+      // Keep it if we can't verify (benefit of doubt)
+      verified.push({
+        ...sub,
+        verified: false,
+        snippet: 'Could not verify'
+      });
+    }
+  }
+  
+  return verified;
+}
+
+/**
+ * Analyze full email content to determine if it's an actual subscription
+ * @param {string} body - Email body (cleaned, lowercase)
+ * @param {string} subject - Email subject
+ * @returns {boolean} true if actual subscription
+ */
+function analyzeEmailContent(body, subject) {
+  const subjectLower = subject.toLowerCase();
+  
+  // Strong indicators it's NOT a subscription (promotional/marketing)
+  const promoIndicators = [
+    'limited time', 'final hours', 'last chance', 'hurry',
+    'save now', 'special offer', 'exclusive offer',
+    'get started', 'try now', 'sign up now', 'join now',
+    'black friday', 'cyber monday', 'flash sale',
+    '% off', 'discount code', 'promo code'
+  ];
+  
+  // Check subject for promo indicators
+  if (promoIndicators.some(indicator => subjectLower.includes(indicator))) {
+    return false;
+  }
+  
+  // Strong indicators it IS a subscription (payment/billing)
+  const subscriptionIndicators = [
+    'payment received', 'payment successful', 'payment processed',
+    'invoice', 'receipt', 'billing statement',
+    'subscription renewed', 'subscription active',
+    'auto-renewal', 'next billing date',
+    'amount charged', 'card ending in',
+    'subscription period', 'billing cycle'
+  ];
+  
+  // Check body for subscription indicators
+  const hasSubscriptionIndicator = subscriptionIndicators.some(indicator =>
+    body.includes(indicator)
+  );
+  
+  return hasSubscriptionIndicator;
 }
 
 // Made with Bob

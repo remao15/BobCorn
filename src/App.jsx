@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Marquee from './components/Marquee'
@@ -24,9 +24,11 @@ export default function App() {
   // Toggle between marketing site and scanner test
   const [showTest, setShowTest] = useState(false)
 
-  // Check if we're in test mode via URL
-  const urlParams = new URLSearchParams(window.location.search)
-  const testMode = urlParams.has('test') || urlParams.has('session') || showTest
+  // Check if we're in test mode via URL (memoized to avoid recreating on every render)
+  const testMode = useMemo(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.has('test') || urlParams.has('session') || urlParams.has('token') || showTest
+  }, [showTest])
 
   if (testMode) {
     return <ScannerTest />
