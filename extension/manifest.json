@@ -22,5 +22,11 @@
       "js": ["content.js"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.html", "history.html", "compare.html", "utils.js", "popup.js", "history.js", "compare.js"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }

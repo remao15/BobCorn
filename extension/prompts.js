@@ -14,6 +14,7 @@ Respond with exactly this structure:
 {
   "verdict": "<CLEAN | WARNING | SUSPICIOUS>",
   "bsScore": <integer 0-100>,
+  "category": "<product category or type, e.g. 'online-course', 'physical-product', 'subscription', 'ebook', 'software'>",
   "summary": "<1-2 sentence honest verdict>",
   "issues": [
     {

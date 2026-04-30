@@ -1,13 +1,19 @@
 /**
  * CartCop Background Service Worker
  * Runs two parallel Gemini pipelines: page analysis (offline) + alternatives (Tavily-grounded).
+ * Also handles persistent storage for Skip & Save and Comparison Mode features.
  */
 
-importScripts('keys.js', 'prompts.js');
+importScripts('keys.js', 'prompts.js', 'utils.js');
 
-const MODEL = 'minimax/minimax-m2.7:exacto';
+const STORAGE_KEY = 'cartcop';
+const MAX_PRODUCTS = 100;
+
+const MODEL = 'qwen/qwen3.6-35b-a3b:exacto';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TAVILY_SEARCH_URL = 'https://api.tavily.com/search';
+
+// ==================== MESSAGE LISTENERS ====================
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'PRODUCT_DETECTED') {
@@ -20,7 +26,39 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
     return true;
   }
+  if (message.type === 'SAVE_ANALYSIS') {
+    saveAnalysis(message.payload, message.analysis)
+      .then(result => sendResponse({ success: true, result }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+  if (message.type === 'SKIP_PRODUCT') {
+    markSkipped(message.id)
+      .then(result => sendResponse({ success: true, result }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+  if (message.type === 'GET_HISTORY') {
+    getHistory()
+      .then(result => sendResponse({ success: true, result }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+  if (message.type === 'GET_PRODUCT') {
+    getProduct(message.id)
+      .then(result => sendResponse({ success: true, result }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+  if (message.type === 'CLEAR_HISTORY') {
+    clearHistory()
+      .then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
 });
+
+// ==================== PRODUCT ANALYSIS ====================
 
 async function handleProductAnalysis(payload) {
   await chrome.storage.session.set({ cartcop_status: 'loading', cartcop_analysis: null, cartcop_error: null });
@@ -37,6 +75,7 @@ async function handleProductAnalysis(payload) {
     const analysis = {
       product: payload.title,
       url: payload.url,
+      price: payload.price || null,
       pageComments,
       alternatives
     };
@@ -127,4 +166,145 @@ async function getKeys() {
 function setBadge(text, color) {
   chrome.action.setBadgeText({ text });
   chrome.action.setBadgeBackgroundColor({ color });
+}
+
+// ==================== PERSISTENT STORAGE LAYER ====================
+
+/**
+ * Get the full cartcop storage object, initializing if needed.
+ */
+async function getStorage() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY], result => {
+      const data = result[STORAGE_KEY] || {
+        products: [],
+        totalSaved: 0,
+        totalAnalyzed: 0
+      };
+      resolve(data);
+    });
+  });
+}
+
+/**
+ * Save the cartcop storage object.
+ */
+async function setStorage(data) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEY]: data }, resolve);
+  });
+}
+
+/**
+ * Save an analysis to persistent storage.
+ * Deduplicates by URL hash. Updates existing entry or creates new.
+ */
+async function saveAnalysis(payload, analysis) {
+  const storage = await getStorage();
+  const id = hashUrl(payload.url);
+  const now = Date.now();
+
+  // Try to find existing entry
+  const existingIndex = storage.products.findIndex(p => p.id === id);
+
+  const productEntry = {
+    id,
+    url: payload.url,
+    title: payload.title,
+    price: payload.price || null,
+    category: analysis.pageComments.category || null,
+    skipped: false,
+    skippedAt: null,
+    moneySaved: null,
+    analyzedAt: now,
+    pageComments: analysis.pageComments,
+    alternatives: analysis.alternatives
+  };
+
+  if (existingIndex !== -1) {
+    // Update existing - preserve skipped status and moneySaved if already skipped
+    const existing = storage.products[existingIndex];
+    productEntry.skipped = existing.skipped;
+    productEntry.skippedAt = existing.skippedAt;
+    productEntry.moneySaved = existing.moneySaved;
+    storage.products[existingIndex] = productEntry;
+  } else {
+    // Enforce cap
+    if (storage.products.length >= MAX_PRODUCTS) {
+      // Remove oldest non-skipped first
+      const nonSkippedIndex = storage.products.findIndex(p => !p.skipped);
+      if (nonSkippedIndex !== -1) {
+        storage.products.splice(nonSkippedIndex, 1);
+      } else {
+        // All are skipped, remove oldest
+        storage.products.shift();
+      }
+    }
+    storage.products.push(productEntry);
+    storage.totalAnalyzed++;
+  }
+
+  await setStorage(storage);
+  return productEntry;
+}
+
+/**
+ * Mark a product as skipped (Skip & Save action).
+ */
+async function markSkipped(id) {
+  const storage = await getStorage();
+  const index = storage.products.findIndex(p => p.id === id);
+
+  if (index === -1) {
+    throw new Error('Product not found in history');
+  }
+
+  const product = storage.products[index];
+
+  // If already skipped, return as-is (idempotent)
+  if (product.skipped) {
+    return product;
+  }
+
+  const moneySaved = parsePrice(product.price);
+  product.skipped = true;
+  product.skippedAt = Date.now();
+  product.moneySaved = moneySaved;
+
+  // Update total saved
+  if (moneySaved !== null) {
+    storage.totalSaved = (storage.totalSaved || 0) + moneySaved;
+  }
+
+  storage.products[index] = product;
+  await setStorage(storage);
+
+  return product;
+}
+
+/**
+ * Get all history products sorted by analyzedAt descending.
+ */
+async function getHistory() {
+  const storage = await getStorage();
+  return storage.products.sort((a, b) => (b.analyzedAt || 0) - (a.analyzedAt || 0));
+}
+
+/**
+ * Get a single product by ID.
+ */
+async function getProduct(id) {
+  const storage = await getStorage();
+  return storage.products.find(p => p.id === id) || null;
+}
+
+/**
+ * Clear all history.
+ */
+async function clearHistory() {
+  await setStorage({
+    products: [],
+    totalSaved: 0,
+    totalAnalyzed: 0
+  });
 }

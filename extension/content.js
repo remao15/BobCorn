@@ -66,6 +66,90 @@
     return hits >= 2;
   }
 
+  /**
+   * Extract price from the page.
+   * Priority: meta tags > structured data > DOM scraping.
+   */
+  function extractPrice() {
+    // Try meta tags first (Open Graph, Schema.org)
+    const ogPrice = document.querySelector(
+      'meta[property="og:price:amount"], meta[property="product:price:amount"], meta[property="product:price:currency"]'
+    );
+    if (ogPrice) {
+      const priceAmount = document.querySelector('meta[property="og:price:amount"]')?.content ||
+                          document.querySelector('meta[property="product:price:amount"]')?.content;
+      const priceCurrency = document.querySelector('meta[property="og:price:currency"]')?.content ||
+                            document.querySelector('meta[property="product:price:currency"]')?.content;
+      if (priceAmount) {
+        return priceCurrency ? `${priceCurrency}${priceAmount}` : priceAmount;
+      }
+    }
+
+    // Try JSON-LD structured data
+    const ldScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    for (const script of ldScripts) {
+      try {
+        const data = JSON.parse(script.textContent);
+        // Handle single product
+        if (data.offers) {
+          const offer = Array.isArray(data.offers) ? data.offers[0] : data.offers;
+          if (offer.price) {
+            const currency = offer.priceCurrency || '';
+            return `${currency}${offer.price}`;
+          }
+        }
+        // Handle @graph array
+        if (data['@graph']) {
+          for (const item of data['@graph']) {
+            if (item.offers) {
+              const offer = Array.isArray(item.offers) ? item.offers[0] : item.offers;
+              if (offer.price) {
+                const currency = offer.priceCurrency || '';
+                return `${currency}${offer.price}`;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // Try common DOM selectors
+    const priceSelectors = [
+      // Udemy
+      '[data-purpose="price"] span:first-child',
+      '.price-text span',
+      // Amazon
+      '#priceblock_ourprice',
+      '#priceblock_dealprice',
+      '.a-price .a-offscreen',
+      // General
+      '[class*="price"]:not([class*="old"]):not([class*="was"])',
+      '[class*="Price"]',
+      '.product-price',
+      '.sale-price',
+      '.current-price'
+    ];
+
+    for (const selector of priceSelectors) {
+      const el = document.querySelector(selector);
+      if (el) {
+        const text = el.textContent?.trim() || el.innerText?.trim();
+        if (text && /\d/.test(text)) {
+          return text;
+        }
+      }
+    }
+
+    // Fallback: extract from page text
+    const text = document.body.innerText.slice(0, 8000);
+    const priceMatch = text.match(/[\u20AC$\u00A3\u00A5\u20B9]\s*\d+[\d.,]*|\d+[\d.,]*\s*[\u20AC$\u00A3\u00A5]/);
+    if (priceMatch) {
+      return priceMatch[0];
+    }
+
+    return null;
+  }
+
   function extractPageData() {
     const title =
       document.querySelector('meta[property="og:title"]')?.content ||
@@ -73,14 +157,19 @@
       document.title;
 
     const pageText = document.body.innerText.replace(/\s+/g, ' ').trim();
+    const price = extractPrice();
 
-    return { url: location.href, title, pageText };
+    return { url: location.href, title, pageText, price };
   }
 
   function run() {
-    if (!detectProduct()) return;
+    if (!detectProduct()) {
+      // Notify popup that this is not a product page
+      chrome.runtime.sendMessage({ type: 'NON_PRODUCT_PAGE' });
+      return;
+    }
     const payload = extractPageData();
-    console.log('[CartCop] Product page detected:', payload.title);
+    console.log('[CartCop] Product page detected:', payload.title, '| Price:', payload.price);
     chrome.runtime.sendMessage({ type: 'PRODUCT_DETECTED', payload });
   }
 
@@ -362,6 +451,8 @@
       setTimeout(() => {
         if (detectProduct()) {
           run();
+        } else {
+          chrome.runtime.sendMessage({ type: 'NON_PRODUCT_PAGE' });
         }
       }, 500);
     }
