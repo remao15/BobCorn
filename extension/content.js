@@ -43,89 +43,97 @@
     };
   }
 
-  // ─── HELPERS ───
+  // ─── COLOR HELPERS ───
   function getBsColor(score) {
-    if (score >= 70) return '#ff4444';
-    if (score >= 40) return '#ffaa00';
-    return '#00cc66';
+    if (score >= 70) return '#dc2626'; // red-600
+    if (score >= 40) return '#d97706'; // amber-600
+    return '#16a34a'; // green-600
+  }
+
+  function getBsBackground(score) {
+    if (score >= 70) return '#fef2f2'; // red-50
+    if (score >= 40) return '#fffbeb'; // amber-50
+    return '#f0fdf4'; // green-50
   }
 
   function getBsLabel(score) {
-    if (score >= 70) return 'HIGH BS ALERT';
-    if (score >= 40) return 'MEDIUM BS WARNING';
-    return 'LOW BS — SOLID PICK';
+    if (score >= 70) return 'High BS Alert';
+    if (score >= 40) return 'Medium BS Warning';
+    return 'Low BS — Solid Pick';
   }
 
   // ─── STYLES ───
-  function buildStyles(color) {
+  function buildStyles(color, bg) {
     return `
       #${OVERLAY_ID} {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background: #0a0a0f;
-        border: 2px solid ${color};
-        border-radius: 12px;
+        background: ${bg};
+        border: 1px solid ${color};
+        border-radius: 10px;
         padding: 16px;
         margin-bottom: 16px;
-        color: #fff;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+        color: #1f2937;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         max-width: 100%;
         box-sizing: border-box;
-        transition: border-color 0.4s;
+        transition: border-color 0.3s, background 0.3s;
       }
       #${OVERLAY_ID} .cc-header {
         display: flex; align-items: center; gap: 10px;
         margin-bottom: 12px; padding-bottom: 12px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        border-bottom: 1px solid rgba(0,0,0,0.08);
       }
-      #${OVERLAY_ID} .cc-icon { font-size: 20px; }
+      #${OVERLAY_ID} .cc-icon { font-size: 18px; }
       #${OVERLAY_ID} .cc-title {
-        font-weight: 800; font-size: 14px; letter-spacing: 0.5px; color: #fff; flex: 1;
+        font-weight: 700; font-size: 13px; letter-spacing: 0.3px; color: #374151; flex: 1; text-transform: uppercase;
       }
       #${OVERLAY_ID} .cc-score {
-        font-weight: 900; font-size: 16px; padding: 4px 10px; border-radius: 6px; color: #fff;
+        font-weight: 800; font-size: 14px; padding: 3px 10px; border-radius: 6px; color: #fff; background: ${color};
       }
       #${OVERLAY_ID} .cc-loading {
-        font-size: 13px; color: #888; font-style: italic;
+        font-size: 13px; color: #6b7280; font-style: italic;
         animation: cc-pulse 1.5s ease-in-out infinite;
       }
-      #${OVERLAY_ID} .cc-status { font-size: 14px; color: #aaa; padding: 6px 0; }
-      @keyframes cc-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+      #${OVERLAY_ID} .cc-status { font-size: 13px; color: #4b5563; padding: 4px 0; }
+      @keyframes cc-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
       #${OVERLAY_ID} .cc-verdict {
-        border-left: 4px solid ${color}; padding-left: 12px; margin-bottom: 16px;
+        border-left: 3px solid ${color}; padding-left: 12px; margin-bottom: 14px;
       }
       #${OVERLAY_ID} .cc-label {
-        font-weight: 800; font-size: 13px; text-transform: uppercase;
-        letter-spacing: 0.5px; margin-bottom: 6px;
+        font-weight: 700; font-size: 12px; text-transform: uppercase;
+        letter-spacing: 0.4px; margin-bottom: 4px; color: ${color};
       }
       #${OVERLAY_ID} .cc-truth {
-        font-size: 15px; line-height: 1.5; color: #e0e0e0; font-style: italic;
+        font-size: 14px; line-height: 1.5; color: #374151; font-style: italic;
       }
       #${OVERLAY_ID} .cc-alts-title {
-        font-weight: 700; font-size: 13px; margin-bottom: 10px;
-        color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;
+        font-weight: 700; font-size: 11px; margin-bottom: 8px;
+        color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px;
       }
       #${OVERLAY_ID} .cc-alt {
         display: flex; align-items: flex-start; gap: 10px;
-        background: rgba(255,255,255,0.04); border-radius: 8px;
-        padding: 10px 12px; margin-bottom: 8px; transition: background 0.2s;
+        background: #fff; border-radius: 8px;
+        padding: 10px 12px; margin-bottom: 6px;
+        border: 1px solid rgba(0,0,0,0.06);
+        transition: box-shadow 0.2s;
       }
-      #${OVERLAY_ID} .cc-alt:hover { background: rgba(255,255,255,0.08); }
+      #${OVERLAY_ID} .cc-alt:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
       #${OVERLAY_ID} .cc-alt-num {
-        font-weight: 900; font-size: 18px; min-width: 22px; text-align: center; line-height: 1;
+        font-weight: 800; font-size: 16px; min-width: 20px; text-align: center; line-height: 1; color: ${color};
       }
       #${OVERLAY_ID} .cc-alt-info { flex: 1; }
       #${OVERLAY_ID} .cc-alt-name {
-        font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 2px;
+        font-weight: 600; font-size: 13px; color: #1f2937; margin-bottom: 2px;
       }
-      #${OVERLAY_ID} .cc-alt-price { font-weight: 600; color: #00cc66; margin-left: 4px; }
-      #${OVERLAY_ID} .cc-alt-why { font-size: 12px; color: #bbb; line-height: 1.4; }
+      #${OVERLAY_ID} .cc-alt-price { font-weight: 700; color: #16a34a; margin-left: 4px; font-size: 12px; }
+      #${OVERLAY_ID} .cc-alt-why { font-size: 12px; color: #4b5563; line-height: 1.4; }
       #${OVERLAY_ID} .cc-alt-link {
-        font-size: 12px; font-weight: 700; text-decoration: none;
-        white-space: nowrap; padding: 4px 8px;
-        border: 1px solid ${color}; border-radius: 4px;
+        font-size: 11px; font-weight: 700; text-decoration: none;
+        white-space: nowrap; padding: 4px 10px;
+        border: 1px solid ${color}; border-radius: 5px;
         color: ${color}; transition: all 0.2s;
       }
-      #${OVERLAY_ID} .cc-alt-link:hover { background: ${color}; color: #0a0a0f; }
+      #${OVERLAY_ID} .cc-alt-link:hover { background: ${color}; color: #fff; }
     `;
   }
 
@@ -136,14 +144,14 @@
     overlay.innerHTML = `
       <div class="cc-header">
         <span class="cc-icon">🛡️</span>
-        <span class="cc-title">CARTCOP BS DETECTOR</span>
-        <span class="cc-loading">Analyzing with Perplexity Sonar...</span>
+        <span class="cc-title">CartCop BS Detector</span>
+        <span class="cc-loading">Analyzing…</span>
       </div>
-      <div class="cc-status">🔍 Fetching real-time product intel...</div>
+      <div class="cc-status">Fetching real-time product intel…</div>
     `;
     const style = document.createElement('style');
     style.id = 'cartcop-style';
-    style.textContent = buildStyles('#555');
+    style.textContent = buildStyles('#9ca3af', '#f9fafb');
     return { overlay, style };
   }
 
@@ -153,24 +161,26 @@
     if (!overlay) return;
 
     const color = getBsColor(data.bsScore);
+    const bg = getBsBackground(data.bsScore);
     const label = getBsLabel(data.bsScore);
 
     overlay.style.borderColor = color;
+    overlay.style.background = bg;
     overlay.innerHTML = `
       <div class="cc-header">
         <span class="cc-icon">🛡️</span>
-        <span class="cc-title">CARTCOP BS DETECTOR</span>
-        <span class="cc-score" style="background:${color}">${data.bsScore}/100</span>
+        <span class="cc-title">CartCop BS Detector</span>
+        <span class="cc-score">${data.bsScore}/100</span>
       </div>
-      <div class="cc-verdict" style="border-left-color:${color}">
-        <div class="cc-label" style="color:${color}">${label}</div>
+      <div class="cc-verdict">
+        <div class="cc-label">${label}</div>
         <div class="cc-truth">${data.brutalTruth}</div>
       </div>
       <div class="cc-alts">
-        <div class="cc-alts-title">✅ Better Alternatives:</div>
+        <div class="cc-alts-title">Better Alternatives</div>
         ${data.alternatives.map((alt, i) => `
           <div class="cc-alt">
-            <div class="cc-alt-num" style="color:${color}">${i + 1}</div>
+            <div class="cc-alt-num">${i + 1}</div>
             <div class="cc-alt-info">
               <div class="cc-alt-name">${alt.name} <span class="cc-alt-price">${alt.price}</span></div>
               <div class="cc-alt-why">${alt.whyBetter}</div>
@@ -182,18 +192,20 @@
     `;
 
     const styleEl = document.getElementById('cartcop-style');
-    if (styleEl) styleEl.textContent = buildStyles(color);
+    if (styleEl) styleEl.textContent = buildStyles(color, bg);
   }
 
   function renderError(msg) {
     const overlay = document.getElementById(OVERLAY_ID);
     if (!overlay) return;
+    overlay.style.borderColor = '#dc2626';
+    overlay.style.background = '#fef2f2';
     overlay.innerHTML = `
       <div class="cc-header">
         <span class="cc-icon">🛡️</span>
-        <span class="cc-title">CARTCOP BS DETECTOR</span>
+        <span class="cc-title">CartCop BS Detector</span>
       </div>
-      <div class="cc-status" style="color:#ff4444">⚠️ ${msg}</div>
+      <div class="cc-status" style="color:#dc2626">⚠️ ${msg}</div>
     `;
   }
 
