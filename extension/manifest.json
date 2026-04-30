@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "AdCheck",
+  "version": "2.0.0",
+  "description": "Detects BS on any e-commerce page. Flags inconsistencies, bad policies, and surfaces verified alternatives.",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": [
+    "https://openrouter.ai/*",
+    "https://api.tavily.com/*",
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "0.png",
+    "32": "0.png",
+    "48": "0.png",
+    "128": "0.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "0.png",
+      "32": "0.png"
+    },
+    "default_title": "AdCheck"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.html", "history.html", "compare.html", "utils.js", "popup.js", "history.js", "compare.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

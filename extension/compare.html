@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdCheck Comparison</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 100%;
+      min-height: 100vh;
+      background: #f5f5f7;
+      color: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      background: #f5f5f7;
+      z-index: 10;
+    }
+    .back-btn {
+      background: rgba(0,0,0,0.05);
+      color: #666;
+      border: 1px solid rgba(0,0,0,0.1);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: rgba(0,0,0,0.1);
+      color: #1a1a1a;
+    }
+    .header-title {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      flex: 1;
+      color: #1a1a1a;
+    }
+    .category-warning {
+      background: rgba(255,170,0,0.1);
+      border: 1px solid rgba(255,170,0,0.3);
+      color: #ffaa00;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: rgba(0,0,0,0.06);
+      margin: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .product-col {
+      background: #f5f5f7;
+      padding: 0;
+    }
+    .product-header {
+      padding: 20px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .product-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .product-meta {
+      font-size: 12px;
+      color: #888;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .product-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .section-label {
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #777;
+      margin-bottom: 10px;
+    }
+    .score-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .score-number {
+      font-size: 28px;
+      font-weight: 900;
+    }
+    .score-unit {
+      font-size: 14px;
+      color: #888;
+    }
+    .verdict-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: #fff;
+    }
+    .summary-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #555;
+      font-style: italic;
+    }
+    .issues-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .issue-item {
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.03);
+      border-radius: 6px;
+      border-left: 3px solid transparent;
+      transition: opacity 0.2s;
+    }
+    .issue-item.diff {
+      border-left-color: #ffaa00;
+    }
+    .issue-item.shared {
+      opacity: 0.5;
+    }
+    .issue-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .issue-sev {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .sev-high { background: rgba(255,68,68,0.2); color: #ff6666; }
+    .sev-medium { background: rgba(255,170,0,0.2); color: #ffbb33; }
+    .sev-low { background: rgba(0,204,102,0.2); color: #33dd77; }
+    .issue-type {
+      font-size: 10px;
+      color: #777;
+      text-transform: uppercase;
+    }
+    .issue-detail {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.4;
+    }
+    .alts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .alt-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.03);
+      border-radius: 6px;
+    }
+    .alt-num {
+      font-weight: 900;
+      font-size: 16px;
+      min-width: 20px;
+      color: #00cc66;
+    }
+    .alt-body { flex: 1; }
+    .alt-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #1a1a1a;
+    }
+    .alt-price {
+      font-weight: 700;
+      color: #00cc66;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+    .alt-service {
+      font-size: 11px;
+      color: #888;
+    }
+    .alt-why {
+      font-size: 11px;
+      color: #555;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .winner-bar {
+      margin: 24px;
+      padding: 20px 24px;
+      background: rgba(0,204,102,0.1);
+      border: 1px solid rgba(0,204,102,0.3);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .winner-icon {
+      font-size: 24px;
+    }
+    .winner-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #00cc66;
+    }
+    .winner-reason {
+      font-size: 12px;
+      color: #555;
+      margin-top: 4px;
+    }
+    .no-issues {
+      color: #888;
+      font-size: 12px;
+      font-style: italic;
+    }
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #888;
+    }
+    .loading-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+    .error {
+      text-align: center;
+      padding: 60px;
+      color: #cc3333;
+    }
+    .error-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="history.html" class="back-btn">\u2190 Back to history</a>
+    <span class="header-title">Product Comparison</span>
+  </div>
+  
+  <div id="category-warning" class="category-warning" style="display:none">
+    These may be different product types \u2014 comparison may be less meaningful.
+  </div>
+  
+  <div id="content">
+    <div class="loading">
+      <div class="loading-icon">&#8987;</div>
+      <div>Loading comparison...</div>
+    </div>
+  </div>
+  
+  <script src="utils.js"></script>
+  <script src="compare.js"></script>
+</body>
+</html>
