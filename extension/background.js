@@ -1,11 +1,11 @@
 /**
  * CartCop Background Service Worker
- * Runs two parallel Nemotron pipelines: page analysis (offline) + alternatives (Tavily-grounded).
+ * Runs two parallel Gemini pipelines: page analysis (offline) + alternatives (Tavily-grounded).
  */
 
 importScripts('keys.js', 'prompts.js');
 
-const MODEL = 'nvidia/nemotron-3-super-120b-a12b';
+const MODEL = 'google/gemini-3-flash-preview:nitro';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TAVILY_SEARCH_URL = 'https://api.tavily.com/search';
 
@@ -78,17 +78,28 @@ async function callModel(prompt, apiKey) {
       model: MODEL,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
-      max_tokens: 1200
+      max_tokens: 1200,
+      response_format: { type: 'json_object' }
     })
   });
-  if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${res.statusText}`);
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`OpenRouter error ${res.status}: ${errBody || res.statusText}`);
+  }
+
   const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Empty response from OpenRouter API');
-  return content
-    .trim()
-    .replace(/^```(?:json)?\n?/, '')
-    .replace(/\n?```$/, '');
+
+  if (!data.choices?.length) {
+    throw new Error(`No choices in OpenRouter response: ${JSON.stringify(data)}`);
+  }
+
+  const content = data.choices[0].message?.content;
+  if (!content || content.trim() === '') {
+    throw new Error('Empty content in OpenRouter response');
+  }
+
+  return content.trim();
 }
 
 async function tavilySearch(query, apiKey) {
