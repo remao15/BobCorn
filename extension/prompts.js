@@ -19,10 +19,22 @@ Respond with exactly this structure:
     {
       "type": "<pricing | policy | quality | trust | claim>",
       "severity": "<high | medium | low>",
-      "detail": "<specific observation>"
+      "detail": "<specific observation>",
+      "highlightId": "<id from highlights array, e.g. 'h1'>"
+    }
+  ],
+  "highlights": [
+    {
+      "id": "<unique id, e.g. 'h1'>",
+      "text": "<exact substring from Page Content, 6-20 words>",
+      "reason": "<why this is concerning or positive>",
+      "sentiment": "<negative | positive>",
+      "severity": "<high | medium | low or null for positive>"
     }
   ]
 }
+
+IMPORTANT: For each highlight, text must be an EXACT substring copied verbatim from the Page Content above. Do not paraphrase or rephrase. Minimum 6 words, maximum 20 words.
 
 bsScore guide: 0-39 = genuine value, 40-69 = mediocre or overpriced, 70-100 = BS / pure markup.
 Issues to look for: inflated original prices, vague return/refund policies, suspicious review patterns, unverifiable claims, dark patterns, missing certifications.
