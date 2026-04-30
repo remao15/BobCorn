@@ -1,8 +1,3 @@
-/**
- * AdCheck Prompts
- * Edit these to tune the AI pipeline behavior.
- */
-
 const PROMPTS = {
   pageComments(pageText) {
     return `You are a brutally honest consumer protection analyst. Analyze the e-commerce product page content below and respond ONLY with valid JSON — no markdown, no explanation.
@@ -23,15 +18,6 @@ Respond with exactly this structure:
       "detail": "<specific observation>",
       "highlightId": "<id from highlights array, e.g. 'h1'>"
     }
-  ],
-  "highlights": [
-    {
-      "id": "<unique id, e.g. 'h1'>",
-      "text": "<exact substring from Page Content, 6-20 words>",
-      "reason": "<why this is concerning or positive>",
-      "sentiment": "<negative | positive>",
-      "severity": "<high | medium | low or null for positive>"
-    }
   ]
 }
 
@@ -43,7 +29,7 @@ Return only the JSON object.`;
   },
 
   alternativeQueries(title, pageText) {
-    return `You are a product research assistant. Based on the product below, generate exactly 3 search queries to find better or cheaper alternatives on the web.
+    return `You are a product research assistant. Based on the product below, generate exactly 3 search queries to find better or cheaper alternatives on the web. Do not generate queries that could yield scummy products, scams, or get-rich-quick schemes.
 
 Product: ${title}
 Context: ${pageText.slice(0, 1000)}
@@ -58,7 +44,13 @@ Output only the JSON array.`;
     const resultsText = results
       .map(r => `URL: ${r.url}\nTitle: ${r.title}\nSnippet: ${r.content}`)
       .join('\n---\n');
-    return `You are a product analyst. From the search results below, extract the 3 most relevant and clearly better alternatives to "${originalTitle}".
+    return `You are a product analyst. From the search results below, extract up to 3 of the most relevant and clearly better alternatives to "${originalTitle}".
+
+CRITICAL RULES:
+1. STRICTLY use the URLs provided in the search results. Do NOT hallucinate or fabricate links.
+2. Do NOT recommend scummy products, scams, or "get rich quick" courses.
+3. Do NOT recommend unrelated links, filler pages, or irrelevant articles.
+4. It is better to return an empty array [] than to include low-quality, irrelevant, or fabricated results. Only include an alternative if it is genuinely helpful and reputable.
 
 ## Search Results
 ${resultsText.slice(0, 5000)}
@@ -74,6 +66,6 @@ Respond ONLY with a JSON array with exactly this structure:
   }
 ]
 
-Only include results that are real, relevant product alternatives. Output only the JSON array.`;
+Output only the JSON array.`;
   }
 };
