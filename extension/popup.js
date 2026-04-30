@@ -1,16 +1,10 @@
-// CartCop Popup — Macro layer (score, verdict, summary, alternatives, stats)
-// No highlight content — that's the micro layer in the DOM.
-
 const POLL_INTERVAL = 1500;
 
-// Track state
-let currentView = 'loading';
+// Track current view state
+let currentView = 'loading'; // 'loading', 'dashboard', 'live', 'cached'
 let currentAnalysis = null;
 let currentProductId = null;
 let currentSkipped = false;
-let streamPort = null;
-let isStreaming = false;
-let streamBuffer = '';
 
 // ==================== UTILITIES ====================
 
@@ -37,6 +31,7 @@ function formatDate(timestamp) {
   const date = new Date(timestamp);
   const now = new Date();
   const diff = now - date;
+  
   if (diff < 24 * 60 * 60 * 1000) {
     const hours = Math.floor(diff / (60 * 60 * 1000));
     if (hours < 1) {
@@ -45,12 +40,14 @@ function formatDate(timestamp) {
     }
     return `${hours}h ago`;
   }
+  
   if (diff < 7 * 24 * 60 * 60 * 1000) {
     const days = Math.floor(diff / (24 * 60 * 60 * 1000));
     return `${days}d ago`;
   }
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
+  
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   });
@@ -60,6 +57,24 @@ function formatCurrency(value) {
   if (value === null || value === undefined) return '+ unknown';
   if (typeof value !== 'number' || isNaN(value)) return '+ unknown';
   return `+ $${value.toFixed(2)}`;
+}
+
+function parsePrice(priceStr) {
+  if (!priceStr || typeof priceStr !== 'string') return null;
+  let cleaned = priceStr.replace(/[€$£¥₹\s]/g, '').trim();
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+  
+  if (lastComma > lastDot) {
+    cleaned = cleaned.replace(/,/g, '.');
+  } else if (lastComma !== -1 && lastDot === -1) {
+    cleaned = cleaned.replace(/,/g, '.');
+  } else if (lastComma !== -1 && lastDot !== -1) {
+    cleaned = cleaned.replace(/,/g, '');
+  }
+  
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
 }
 
 function hashUrl(url) {
@@ -84,69 +99,56 @@ function hashUrl(url) {
   }
 }
 
-// ==================== STREAMING ====================
+// ==================== RENDER FUNCTIONS ====================
 
-function connectStream() {
-  if (streamPort) return;
-  streamPort = chrome.runtime.connect({ name: 'cartcop-stream' });
-  streamPort.onMessage.addListener(handleStreamMessage);
-  streamPort.onDisconnect.addListener(() => {
-    streamPort = null;
-    isStreaming = false;
-  });
-}
-
-function handleStreamMessage(msg) {
-  if (msg.type === 'CHUNK') {
-    isStreaming = true;
-    streamBuffer += msg.text;
-    updateStreamingUI();
-  } else if (msg.type === 'DONE') {
-    isStreaming = false;
-    streamBuffer = '';
-    // Analysis is now in storage, poll will pick it up
-  } else if (msg.type === 'ERROR') {
-    isStreaming = false;
-    streamBuffer = '';
-    renderState('\u274C', msg.error || 'Streaming error');
+function renderIssues(issues, highlights) {
+  if (!issues?.length) return '<div style="color:#555;font-size:12px">No issues found.</div>';
+  
+  function getHighlightInfo(highlightId) {
+    if (!highlightId) return null;
+    const h = highlights?.find(h => h.id === highlightId);
+    return h || null;
   }
-}
 
-function updateStreamingUI() {
-  // Show a typing animation with the accumulated buffer
-  const content = document.getElementById('content');
-  if (!content.querySelector('.streaming-state')) {
-    content.innerHTML = `
-      <div class="state streaming-state">
-        <div class="state-icon">&#9203;</div>
-        <div class="state-label loading-text">Analyzing product...</div>
-        <div class="summary" style="margin-top:12px;text-align:left;min-height:40px;">
-          <span id="stream-text"></span><span class="streaming-cursor"></span>
+  return issues.map(issue => {
+    const hInfo = getHighlightInfo(issue.highlightId);
+    const pillClass = hInfo?.sentiment === 'positive' ? 'highlight-chip-pos' : 'highlight-chip-neg';
+    const pillText = hInfo?.sentiment === 'positive' ? `\u2713 ${issue.highlightId}` : `\u26A0 ${issue.highlightId}`;
+    
+    return `
+      <div class="issue">
+        <span class="issue-sev sev-${issue.severity}">${issue.severity}</span>
+        <div>
+          <div class="issue-type">${issue.type}</div>
+          <div class="issue-detail">${issue.detail}</div>
+          ${issue.highlightId ? `<span class="highlight-chip ${pillClass}" data-highlight-id="${issue.highlightId}">${pillText} See on page \u2192</span>` : ''}
         </div>
       </div>
     `;
-  }
-  const streamText = document.getElementById('stream-text');
-  if (streamText) {
-    // Show last ~200 chars of buffer as a preview
-    const preview = streamBuffer.slice(-200);
-    streamText.textContent = preview;
-  }
+  }).join('');
 }
 
-// ==================== RENDER FUNCTIONS ====================
-
-function renderIssues(issues) {
-  if (!issues?.length) return '<div style="color:#555;font-size:12px">No issues found.</div>';
-  return issues.map(issue => `
-    <div class="issue">
-      <span class="issue-sev sev-${issue.severity}">${issue.severity}</span>
-      <div>
-        <div class="issue-type">${issue.type}</div>
-        <div class="issue-detail">${issue.detail}</div>
+function renderHighlights(highlights) {
+  if (!highlights?.length) return '';
+  
+  return `
+    <div class="section">
+      <div class="section-title">\u2B50 Highlighted Text</div>
+      <div class="highlights-list">
+        ${highlights.map(h => {
+          const pillClass = h.sentiment === 'positive' ? 'highlight-chip-pos' : 'highlight-chip-neg';
+          const pillText = h.sentiment === 'positive' ? `\u2713 ${h.id}` : `\u26A0 ${h.id}`;
+          return `
+            <div class="highlight-item">
+              <span class="highlight-chip ${pillClass}" data-highlight-id="${h.id}">${pillText}</span>
+              <div class="highlight-text">"${h.text}"</div>
+              <div class="highlight-reason">${h.reason}</div>
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
-  `).join('');
+  `;
 }
 
 function renderAlternatives(alts, color) {
@@ -165,15 +167,12 @@ function renderAlternatives(alts, color) {
   `).join('');
 }
 
-function renderHighlightsPill(count) {
-  if (!count || count <= 0) return '';
-  return `<span class="highlights-pill">${count} highlights on page \u2197</span>`;
-}
-
 function renderActionBar(analysis, productId, skipped) {
-  const bsScore = analysis.pageComments?.bsScore || 0;
-
+  const bsScore = analysis.pageComments.bsScore;
+  const verdict = analysis.pageComments.verdict;
+  
   if (skipped) {
+    // Already skipped - show confirmation
     const saved = analysis.moneySaved;
     const savedText = saved !== null ? formatCurrency(saved).replace('+ ', '') : 'unknown';
     return `
@@ -184,8 +183,9 @@ function renderActionBar(analysis, productId, skipped) {
       </div>
     `;
   }
-
+  
   if (bsScore >= 40) {
+    // WARNING or SUSPICIOUS - show Skip button
     return `
       <div class="action-bar">
         <button class="btn btn-skip" id="skip-btn">
@@ -194,7 +194,8 @@ function renderActionBar(analysis, productId, skipped) {
       </div>
     `;
   }
-
+  
+  // CLEAN verdict - show "Noted" button
   return `
     <div class="action-bar">
       <button class="btn btn-noted" id="noted-btn">
@@ -205,8 +206,8 @@ function renderActionBar(analysis, productId, skipped) {
 }
 
 function renderAnalysis(analysis, isCached = false, cachedAt = null) {
-  const pc = analysis.pageComments || {};
-  const color = getBsColor(pc.bsScore || 0);
+  const pc = analysis.pageComments;
+  const color = getBsColor(pc.bsScore);
   const icon = getVerdictIcon(pc.verdict);
   const productId = hashUrl(analysis.url);
 
@@ -216,23 +217,22 @@ function renderAnalysis(analysis, isCached = false, cachedAt = null) {
   currentView = isCached ? 'cached' : 'live';
 
   const scoreBadge = document.getElementById('score-badge');
-  scoreBadge.textContent = `${pc.bsScore || '?'}/100`;
+  scoreBadge.textContent = `${pc.bsScore}/100`;
   scoreBadge.style.background = color;
   scoreBadge.style.display = '';
 
   const cachedLabel = isCached ? `<span class="cached-label">Cached \u00B7 ${formatDate(cachedAt)}</span>` : '';
-  const highlightsCount = analysis.highlightsCount || 0;
-  const highlightsPill = !isCached ? renderHighlightsPill(highlightsCount) : '';
 
   document.getElementById('content').innerHTML = `
     <div class="section">
-      <div class="section-title">${icon} Verdict ${cachedLabel} ${highlightsPill}</div>
-      <div class="summary">${pc.summary || 'No summary available.'}</div>
+      <div class="section-title">${icon} Verdict ${cachedLabel}</div>
+      <div class="summary">${pc.summary}</div>
     </div>
     <div class="section">
       <div class="section-title">\u26A0\uFE0F Issues Found</div>
-      ${renderIssues(pc.issues)}
+      ${renderIssues(pc.issues, pc.highlights)}
     </div>
+    ${renderHighlights(pc.highlights)}
     <div class="section">
       <div class="section-title">\u2705 Better Alternatives</div>
       ${renderAlternatives(analysis.alternatives, color)}
@@ -240,20 +240,42 @@ function renderAnalysis(analysis, isCached = false, cachedAt = null) {
     ${renderActionBar(analysis, productId, currentSkipped)}
   `;
 
+  // Attach click handlers for highlight chips
+  document.querySelectorAll('.highlight-chip[data-highlight-id]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const id = chip.dataset.highlightId;
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, { type: 'SCROLL_TO_HIGHLIGHT', id });
+        }
+      });
+    });
+    chip.style.cursor = 'pointer';
+  });
+
   // Attach skip/noted button handlers
   const skipBtn = document.getElementById('skip-btn');
-  if (skipBtn) skipBtn.addEventListener('click', handleSkip);
-
+  if (skipBtn) {
+    skipBtn.addEventListener('click', handleSkip);
+  }
+  
   const notedBtn = document.getElementById('noted-btn');
-  if (notedBtn) notedBtn.addEventListener('click', handleNoted);
+  if (notedBtn) {
+    notedBtn.addEventListener('click', handleNoted);
+  }
 }
 
 async function handleSkip() {
   if (!currentProductId) return;
+  
   const btn = document.getElementById('skip-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+  
   try {
+    // Save analysis first
     await chrome.runtime.sendMessage({
       type: 'SAVE_ANALYSIS',
       payload: {
@@ -263,16 +285,19 @@ async function handleSkip() {
       },
       analysis: currentAnalysis
     });
-
+    
+    // Then mark as skipped
     const result = await chrome.runtime.sendMessage({
       type: 'SKIP_PRODUCT',
       id: currentProductId
     });
-
+    
     if (result.success) {
       currentSkipped = true;
       const saved = result.result.moneySaved;
       const savedText = saved !== null ? formatCurrency(saved).replace('+ ', '') : 'unknown';
+      
+      // Update button to show confirmation
       const actionBar = document.querySelector('.action-bar');
       if (actionBar) {
         actionBar.innerHTML = `
@@ -284,16 +309,24 @@ async function handleSkip() {
     }
   } catch (err) {
     console.error('Skip failed:', err);
-    if (btn) { btn.disabled = false; btn.textContent = 'Skip & Save'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Skip & Save';
+    }
   }
 }
 
 async function handleNoted() {
   if (!currentProductId) return;
+  
   const btn = document.getElementById('noted-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+  
   try {
+    // Save analysis with moneySaved: 0
     await chrome.runtime.sendMessage({
       type: 'SAVE_ANALYSIS',
       payload: {
@@ -303,10 +336,16 @@ async function handleNoted() {
       },
       analysis: currentAnalysis
     });
-    if (btn) btn.textContent = '\u2713 Marked as reviewed';
+    
+    if (btn) {
+      btn.textContent = '\u2713 Marked as reviewed';
+    }
   } catch (err) {
     console.error('Noted failed:', err);
-    if (btn) { btn.disabled = false; btn.textContent = 'Noted \u2014 mark as reviewed'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Noted \u2014 mark as reviewed';
+    }
   }
 }
 
@@ -319,12 +358,12 @@ function renderDashboard(stats, recentProducts) {
   const scoreBadge = document.getElementById('score-badge');
   scoreBadge.style.display = 'none';
 
-  const avgScore = stats.avgScore !== null
-    ? `${Math.round(stats.avgScore)}/100`
+  const avgScore = stats.avgScore !== null 
+    ? `${Math.round(stats.avgScore)}/100` 
     : 'N/A';
 
   let recentHtml = '';
-
+  
   if (recentProducts.length === 0) {
     recentHtml = `
       <div class="empty-dashboard">
@@ -340,7 +379,7 @@ function renderDashboard(stats, recentProducts) {
       <div class="recent-list">
         ${recentProducts.slice(0, 5).map(p => {
           const color = getBsColor(p.pageComments?.bsScore || 0);
-          const dotColor = p.pageComments?.verdict === 'SUSPICIOUS' ? '#ff4444' :
+          const dotColor = p.pageComments?.verdict === 'SUSPICIOUS' ? '#ff4444' : 
                            p.pageComments?.verdict === 'WARNING' ? '#ffaa00' : '#00cc66';
           return `
             <div class="recent-item" data-id="${p.id}">
@@ -381,14 +420,19 @@ function renderDashboard(stats, recentProducts) {
     </div>
   `;
 
+  // Attach click handlers for recent items
   document.querySelectorAll('.recent-item[data-id]').forEach(item => {
-    item.addEventListener('click', () => loadCachedProduct(item.dataset.id));
+    item.addEventListener('click', () => {
+      const id = item.dataset.id;
+      loadCachedProduct(id);
+    });
   });
 }
 
 function renderState(icon, message) {
   const scoreBadge = document.getElementById('score-badge');
   scoreBadge.style.display = 'none';
+  
   document.getElementById('content').innerHTML = `
     <div class="state">
       <div class="state-icon">${icon}</div>
@@ -399,13 +443,18 @@ function renderState(icon, message) {
 
 async function loadCachedProduct(id) {
   try {
-    const result = await chrome.runtime.sendMessage({ type: 'GET_PRODUCT', id });
+    const result = await chrome.runtime.sendMessage({
+      type: 'GET_PRODUCT',
+      id: id
+    });
+    
     if (result.success && result.result) {
       renderAnalysis(result.result, true, result.result.analyzedAt);
     } else {
       renderState('\u274C', 'Product not found in history.');
     }
   } catch (err) {
+    console.error('Failed to load cached product:', err);
     renderState('\u274C', 'Failed to load product.');
   }
 }
@@ -413,64 +462,64 @@ async function loadCachedProduct(id) {
 // ==================== MAIN POLL LOOP ====================
 
 async function poll() {
-  // Connect streaming port first
-  connectStream();
-
+  // First, check if we're on a non-product page (dashboard mode)
+  // by checking session storage for analysis status
+  
   chrome.runtime.sendMessage({ type: 'GET_ANALYSIS' }, async result => {
     if (!result || chrome.runtime.lastError) {
+      // Error or no response - show dashboard
       await showDashboard();
       return;
     }
-
+    
     if (result.cartcop_status === 'loading') {
-      // If we're already streaming, the streaming UI is active
-      // Otherwise show the loading state
-      if (!isStreaming) {
-        renderState('\u23F3', '<span class="loading-text">Analyzing product...</span>');
-      }
+      renderState('\u23F3', '<span class="loading-text">Analyzing product...</span>');
       setTimeout(poll, POLL_INTERVAL);
       return;
     }
-
+    
     if (result.cartcop_status === 'error') {
       renderState('\u274C', result.cartcop_error || 'An error occurred.');
       return;
     }
-
+    
     if (result.cartcop_status === 'done' && result.cartcop_analysis) {
       const analysis = result.cartcop_analysis;
       const productId = hashUrl(analysis.url);
-
-      // Check if already skipped
+      
+      // Check if this product is already in history and skipped
       try {
-        const historyResult = await chrome.runtime.sendMessage({ type: 'GET_PRODUCT', id: productId });
+        const historyResult = await chrome.runtime.sendMessage({
+          type: 'GET_PRODUCT',
+          id: productId
+        });
+        
         if (historyResult.success && historyResult.result) {
           analysis.skipped = historyResult.result.skipped;
         }
       } catch {}
-
-      // Get highlights count from session storage
-      try {
-        const sessionResult = await chrome.storage.session.get(['cartcop_highlights']);
-        analysis.highlightsCount = (sessionResult.cartcop_highlights || []).length;
-      } catch {}
-
+      
       renderAnalysis(analysis);
-
-      // Auto-save
+      
+      // Auto-save analysis to persistent storage
       try {
         await chrome.runtime.sendMessage({
           type: 'SAVE_ANALYSIS',
-          payload: { url: analysis.url, title: analysis.product, price: analysis.price },
+          payload: {
+            url: analysis.url,
+            title: analysis.product,
+            price: analysis.price
+          },
           analysis: analysis
         });
       } catch (err) {
         console.warn('Auto-save failed:', err);
       }
+      
       return;
     }
-
-    // No analysis — show dashboard
+    
+    // No analysis available - show dashboard
     await showDashboard();
   });
 }
@@ -478,21 +527,26 @@ async function poll() {
 async function showDashboard() {
   try {
     const result = await chrome.runtime.sendMessage({ type: 'GET_HISTORY' });
+    
     let stats = { totalSaved: 0, totalAnalyzed: 0, avgScore: null };
     let recentProducts = [];
-
+    
     if (result.success && result.result) {
       const products = result.result;
+      
+      // Calculate stats
       const totalSaved = products.reduce((sum, p) => sum + (p.moneySaved || 0), 0);
       const totalAnalyzed = products.length;
       const scores = products.map(p => p.pageComments?.bsScore).filter(s => typeof s === 'number');
       const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      
       stats = { totalSaved, totalAnalyzed, avgScore };
       recentProducts = products;
     }
-
+    
     renderDashboard(stats, recentProducts);
   } catch (err) {
+    console.error('Dashboard error:', err);
     renderDashboard({ totalSaved: 0, totalAnalyzed: 0, avgScore: null }, []);
   }
 }
