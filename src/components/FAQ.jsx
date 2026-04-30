@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: 'Is connecting my bank actually safe?',
-    a: 'We use Plaid for bank linking, the same infrastructure Venmo, Robinhood and Chime rely on. We get read-only access. We never see your password. We never store your credentials. You can revoke access from your bank or from BobCorn in two clicks.',
+    a: 'We use Plaid for bank linking, the same infrastructure Venmo, Robinhood and Chime rely on. We get read-only access. We never see your password. We never store your credentials. You can revoke access from your bank or from adCheck in two clicks.',
   },
   {
     q: 'Do you make money when I buy a recommended alternative?',

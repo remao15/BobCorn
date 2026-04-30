@@ -5,7 +5,7 @@ export default function Logo({ className = '' }) {
         BS
       </span>
       <span className="font-display font-bold text-xl tracking-tight">
-        BobCorn
+        adCheck
       </span>
     </a>
   )

@@ -127,7 +127,7 @@ export default function EarlyAccessModal({ open, onClose }) {
             </span>
             <div className="min-w-0">
               <div id="ea-title" className="font-display font-bold text-base leading-none">
-                BobCorn — Early Access
+                adCheck. Test it out
               </div>
               <div className="text-[10px] font-mono uppercase tracking-widest mt-1 flex items-center gap-1.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${isLiveMode() ? 'bg-cash animate-flash' : 'bg-acid'}`} />
@@ -212,7 +212,7 @@ function EmptyState() {
         Get the truth.
       </div>
       <p className="text-ink/60 max-w-sm mx-auto leading-relaxed text-sm">
-        Drop any product URL below. BobCorn analyzes it, scores the BS, and surfaces three
+        Drop any product URL below. adCheck analyzes it, scores the BS, and surfaces three
         better alternatives.
       </p>
     </div>

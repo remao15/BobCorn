@@ -7,7 +7,7 @@ const steps = [
   {
     n: '02',
     title: 'We grade in real time',
-    body: 'BobCorn scrapes the title, price and reviews, fingerprints the bot patterns, cross-references known fail-rate data, and produces a BS score before the page finishes painting.',
+    body: 'adCheck scrapes the title, price and reviews, fingerprints the bot patterns, cross-references known fail-rate data, and produces a BS score before the page finishes painting.',
   },
   {
     n: '03',

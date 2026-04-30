@@ -16,7 +16,7 @@ const cols = [
       { label: 'About', href: '#' },
       { label: 'Manifesto', href: '#' },
       { label: 'Press', href: '#' },
-      { label: 'Contact', href: 'mailto:hello@bobcorn.dev' },
+      { label: 'Contact', href: 'mailto:hello@adcheck.dev' },
     ],
   },
   {
@@ -40,7 +40,7 @@ export default function Footer() {
               <span className="grid place-items-center w-9 h-9 bg-acid text-ink border-2 border-acid font-display font-bold text-base">
                 BS
               </span>
-              <span className="font-display font-bold text-xl tracking-tight">BobCorn</span>
+              <span className="font-display font-bold text-xl tracking-tight">adCheck</span>
             </div>
             <p className="mt-4 text-paper/70 max-w-sm leading-relaxed">
               The brutally honest layer the internet forgot. Built for people who
@@ -80,7 +80,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-14 pt-6 border-t-2 border-paper/15 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-paper/60">
-          <div>© 2026 BobCorn. Made with mild outrage.</div>
+          <div>© 2026 adCheck. Made with mild outrage.</div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-cash animate-flash" />
             <span>All systems operational</span>

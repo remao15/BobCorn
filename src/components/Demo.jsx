@@ -5,7 +5,7 @@ const steps = [
   },
   {
     label: 'Watch the overlay drop',
-    body: 'BobCorn injects the BS Detector above the buy button. BS score 87. Brutal truth visible. Three vetted alternatives ranked.',
+    body: 'adCheck injects the BS Detector above the buy button. BS score 87. Brutal truth visible. Three vetted alternatives ranked.',
   },
   {
     label: 'Click the better option',

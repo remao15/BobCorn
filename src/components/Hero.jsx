@@ -30,7 +30,7 @@ export default function Hero({ onOpenAnalyzer }) {
               We identified that fake reviews and silent subscription creep cost
               the average US consumer about $1,596 a year, and that nobody has
               an unbiased reality check at the point of sale. So we built
-              BobCorn: a free browser extension that grades any product in two
+              adCheck: a free browser extension that grades any product in two
               seconds, plus a paid dashboard that hunts down the subscriptions
               silently draining your bank account.
             </p>

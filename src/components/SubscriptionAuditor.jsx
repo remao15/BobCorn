@@ -79,7 +79,7 @@ function Dashboard() {
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b-2 border-ink bg-bone">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-cash border-2 border-ink" />
-          <span className="font-mono text-xs">app.bobcorn.dev/dashboard</span>
+          <span className="font-mono text-xs">app.adcheck.dev/dashboard</span>
         </div>
         <span className="text-xs font-mono text-ink/60">Apr 2026</span>
       </div>

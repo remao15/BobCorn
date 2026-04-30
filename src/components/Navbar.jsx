@@ -49,7 +49,7 @@ export default function Navbar({ onOpenAnalyzer }) {
               onClick={onOpenAnalyzer}
               className="btn-acid !py-2 !px-4 text-sm"
             >
-              Early Access
+              Test it out
             </button>
           </div>
           <button
@@ -83,7 +83,7 @@ export default function Navbar({ onOpenAnalyzer }) {
               }}
               className="btn-acid !py-2 !px-4 text-sm w-fit"
             >
-              Early Access
+              Test it out
             </button>
           </div>
         )}
