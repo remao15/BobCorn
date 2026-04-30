@@ -3,37 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CartCop</title>
+  <title>AdCheck</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       width: 380px;
       min-height: 200px;
-      background: #0a0a0f;
-      color: #e0e0e0;
+      background: #f5f5f7;
+      color: #1a1a1a;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 13px;
     }
     .header {
       display: flex; align-items: center; gap: 8px;
-      padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.08);
     }
-    .header-icon { font-size: 18px; }
-    .header-title { font-weight: 800; font-size: 14px; letter-spacing: 0.5px; flex: 1; }
+    .header-icon { width: 20px; height: 20px; }
+    .header-title { font-weight: 800; font-size: 14px; letter-spacing: 0.5px; flex: 1; color: #1a1a1a; }
     .header-score {
       font-weight: 900; font-size: 15px; padding: 3px 9px;
       border-radius: 6px; color: #fff;
     }
-    .section { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .section { padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,0.06); }
     .section-title {
       font-weight: 700; font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.8px; color: #777; margin-bottom: 8px;
+      letter-spacing: 0.8px; color: #666; margin-bottom: 8px;
     }
-    .summary { font-size: 13px; line-height: 1.5; color: #ccc; font-style: italic; }
+    .summary { font-size: 13px; line-height: 1.5; color: #444; font-style: italic; }
     .issue {
       display: flex; align-items: flex-start; gap: 8px;
       padding: 7px 10px; border-radius: 6px;
-      background: rgba(255,255,255,0.04); margin-bottom: 6px;
+      background: rgba(0,0,0,0.04); margin-bottom: 6px;
     }
     .issue-sev {
       font-size: 10px; font-weight: 700; padding: 2px 5px;
@@ -42,36 +42,36 @@
     .sev-high   { background: rgba(255,68,68,0.2);  color: #ff6666; }
     .sev-medium { background: rgba(255,170,0,0.2);  color: #ffbb33; }
     .sev-low    { background: rgba(0,204,102,0.2);  color: #33dd77; }
-    .issue-type { font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
-    .issue-detail { font-size: 12px; color: #bbb; line-height: 1.4; }
+    .issue-type { font-size: 10px; color: #777; text-transform: uppercase; margin-bottom: 2px; }
+    .issue-detail { font-size: 12px; color: #555; line-height: 1.4; }
     .highlight-chip {
       display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px;
       border-radius: 10px; margin-top: 6px; cursor: pointer;
       transition: all 0.2s; white-space: nowrap;
     }
     .highlight-chip:hover { opacity: 0.8; transform: scale(1.05); }
-    .highlight-chip-neg { background: rgba(255,68,68,0.25); color: #ff6666; }
-    .highlight-chip-pos { background: rgba(0,204,102,0.25); color: #33dd77; }
+    .highlight-chip-neg { background: rgba(255,68,68,0.15); color: #cc3333; }
+    .highlight-chip-pos { background: rgba(0,204,102,0.15); color: #229944; }
     .highlights-list { display: flex; flex-direction: column; gap: 8px; }
     .highlight-item {
       padding: 8px 10px; border-radius: 6px;
-      background: rgba(255,255,255,0.04); cursor: pointer;
+      background: rgba(0,0,0,0.04); cursor: pointer;
     }
-    .highlight-item:hover { background: rgba(255,255,255,0.08); }
-    .highlight-text { font-size: 12px; color: #ccc; margin: 4px 0 2px; font-style: italic; }
-    .highlight-reason { font-size: 11px; color: #777; line-height: 1.4; }
+    .highlight-item:hover { background: rgba(0,0,0,0.08); }
+    .highlight-text { font-size: 12px; color: #444; margin: 4px 0 2px; font-style: italic; }
+    .highlight-reason { font-size: 11px; color: #666; line-height: 1.4; }
     .alt {
       display: flex; align-items: flex-start; gap: 10px;
       padding: 9px 10px; border-radius: 7px;
-      background: rgba(255,255,255,0.04); margin-bottom: 6px;
+      background: rgba(0,0,0,0.04); margin-bottom: 6px;
     }
-    .alt:hover { background: rgba(255,255,255,0.08); }
+    .alt:hover { background: rgba(0,0,0,0.08); }
     .alt-num { font-weight: 900; font-size: 16px; min-width: 20px; line-height: 1.2; }
     .alt-body { flex: 1; }
-    .alt-name { font-weight: 700; font-size: 13px; color: #fff; }
-    .alt-service { font-size: 11px; color: #777; }
+    .alt-name { font-weight: 700; font-size: 13px; color: #1a1a1a; }
+    .alt-service { font-size: 11px; color: #666; }
     .alt-price { font-weight: 700; color: #00cc66; font-size: 12px; margin-left: 4px; }
-    .alt-why { font-size: 11px; color: #999; line-height: 1.4; margin-top: 3px; }
+    .alt-why { font-size: 11px; color: #555; line-height: 1.4; margin-top: 3px; }
     .alt-link {
       font-size: 11px; font-weight: 700; text-decoration: none; padding: 4px 8px;
       border-radius: 4px; white-space: nowrap; align-self: center;
@@ -80,17 +80,17 @@
     .alt-link:hover { opacity: 0.8; }
     .state {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 40px 20px; gap: 10px; color: #555; text-align: center;
+      padding: 40px 20px; gap: 10px; color: #888; text-align: center;
     }
     .state-icon { font-size: 28px; }
     .state-label { font-size: 13px; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-    .loading-text { animation: pulse 1.5s ease-in-out infinite; color: #888; }
+    .loading-text { animation: pulse 1.5s ease-in-out infinite; color: #666; }
 
     /* Skip button styles */
     .action-bar {
       padding: 12px 16px;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid rgba(0,0,0,0.08);
       display: flex;
       gap: 8px;
     }
@@ -117,12 +117,12 @@
       cursor: default;
     }
     .btn-noted {
-      background: rgba(255,255,255,0.05);
-      color: #888;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.05);
+      color: #666;
+      border: 1px solid rgba(0,0,0,0.1);
     }
     .btn-noted:hover:not(:disabled) {
-      background: rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.08);
     }
     .btn-noted:disabled {
       opacity: 0.5;
@@ -146,7 +146,7 @@
     }
     .stat-box {
       flex: 1;
-      background: rgba(255,255,255,0.04);
+      background: rgba(0,0,0,0.04);
       border-radius: 8px;
       padding: 12px;
       text-align: center;
@@ -154,7 +154,7 @@
     .stat-value {
       font-size: 20px;
       font-weight: 900;
-      color: #fff;
+      color: #1a1a1a;
       margin-bottom: 4px;
     }
     .stat-value.saved { color: #00cc66; }
@@ -162,14 +162,14 @@
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #666;
+      color: #888;
     }
     .recent-title {
       font-weight: 700;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: #777;
+      color: #666;
       margin-bottom: 10px;
     }
     .recent-list {
@@ -182,13 +182,13 @@
       align-items: center;
       gap: 10px;
       padding: 8px 10px;
-      background: rgba(255,255,255,0.03);
+      background: rgba(0,0,0,0.03);
       border-radius: 6px;
       cursor: pointer;
       transition: background 0.2s;
     }
     .recent-item:hover {
-      background: rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.06);
     }
     .recent-dot {
       width: 8px;
@@ -203,14 +203,14 @@
     .recent-name {
       font-size: 12px;
       font-weight: 600;
-      color: #ccc;
+      color: #333;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .recent-meta {
       font-size: 10px;
-      color: #666;
+      color: #888;
       display: flex;
       gap: 6px;
       margin-top: 2px;
@@ -226,7 +226,7 @@
       display: block;
       text-align: center;
       padding: 10px;
-      color: #666;
+      color: #888;
       font-size: 11px;
       font-weight: 600;
       text-decoration: none;
@@ -234,20 +234,20 @@
       transition: color 0.2s;
     }
     .view-all:hover {
-      color: #999;
+      color: #555;
     }
     .cached-label {
       font-size: 10px;
-      color: #666;
+      color: #888;
       padding: 2px 6px;
-      background: rgba(255,255,255,0.05);
+      background: rgba(0,0,0,0.05);
       border-radius: 3px;
       margin-left: 6px;
     }
     .empty-dashboard {
       text-align: center;
       padding: 30px 20px;
-      color: #555;
+      color: #888;
     }
     .empty-dashboard-icon {
       font-size: 32px;
@@ -261,8 +261,8 @@
 </head>
 <body>
   <div class="header">
-    <span class="header-icon">&#128737;&#65039;</span>
-    <span class="header-title">CARTCOP BS DETECTOR</span>
+    <img class="header-icon" src="0.png" alt="AdCheck" />
+    <span class="header-title">AdCheck</span>
     <span class="header-score" id="score-badge" style="display:none"></span>
   </div>
   <div id="content">
