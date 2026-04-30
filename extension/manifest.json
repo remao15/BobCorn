@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "CartCop: BS Detector",
+  "name": "AdCheck",
   "version": "2.0.0",
   "description": "Detects BS on any e-commerce page. Flags inconsistencies, bad policies, and surfaces verified alternatives.",
   "permissions": ["activeTab", "storage", "tabs"],
@@ -9,12 +9,22 @@
     "https://api.tavily.com/*",
     "<all_urls>"
   ],
+  "icons": {
+    "16": "0.png",
+    "32": "0.png",
+    "48": "0.png",
+    "128": "0.png"
+  },
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "CartCop BS Detector"
+    "default_icon": {
+      "16": "0.png",
+      "32": "0.png"
+    },
+    "default_title": "AdCheck"
   },
   "content_scripts": [
     {
