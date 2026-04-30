@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "CartCop: BS Detector",
+  "version": "1.0.0",
+  "description": "A brutal, on-the-spot product evaluator. Detects BS on Amazon and pushes verified, superior alternatives.",
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.com/*",
+        "*://*.amazon.it/*",
+        "*://*.amazon.co.uk/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.fr/*"
+      ],
+      "js": [
+        "mockData.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
