@@ -170,3 +170,5 @@ extension/
 
 - **Aldo** — [@heron4gf](https://github.com/heron4gf)
 - **Suter Gabriel** — [@SuterGabriel](https://github.com/SuterGabriel)
+- **Rémi Khani** -
+- **Baptiste Lucas** - 
