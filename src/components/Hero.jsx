@@ -1,6 +1,6 @@
 import HeroPreview from './HeroPreview'
 
-export default function Hero() {
+export default function Hero({ onOpenAnalyzer }) {
   return (
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-20 md:pt-20 md:pb-28 relative">
@@ -39,9 +39,9 @@ export default function Hero() {
               className="mt-8 flex flex-wrap items-center gap-4 animate-fade-up"
               style={{ animationDelay: '420ms' }}
             >
-              <a href="#demo" className="btn-acid">
-                <PlayIcon /> Watch the 3-min demo
-              </a>
+              <button type="button" onClick={onOpenAnalyzer} className="btn-acid">
+                <PlayIcon /> Try the BS Detector
+              </button>
               <a href="#build-story" className="btn-ghost">
                 How we built it →
               </a>

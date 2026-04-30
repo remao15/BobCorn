@@ -9,7 +9,7 @@ const links = [
   { href: '#faq', label: 'FAQ' },
 ]
 
-export default function Navbar() {
+export default function Navbar({ onOpenAnalyzer }) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -44,9 +44,13 @@ export default function Navbar() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <a href="#demo" className="btn-acid !py-2 !px-4 text-sm">
+            <button
+              type="button"
+              onClick={onOpenAnalyzer}
+              className="btn-acid !py-2 !px-4 text-sm"
+            >
               Early Access
-            </a>
+            </button>
           </div>
           <button
             type="button"
@@ -71,9 +75,16 @@ export default function Navbar() {
                 {l.label}
               </a>
             ))}
-            <a href="#demo" className="btn-acid !py-2 !px-4 text-sm w-fit">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                onOpenAnalyzer?.()
+              }}
+              className="btn-acid !py-2 !px-4 text-sm w-fit"
+            >
               Early Access
-            </a>
+            </button>
           </div>
         )}
       </div>

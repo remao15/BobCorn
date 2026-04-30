@@ -1,4 +1,4 @@
-export default function BSDetector() {
+export default function BSDetector({ onOpenAnalyzer }) {
   return (
     <section id="bs-detector" className="py-20 md:py-28 bg-bone border-y-2 border-ink">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -25,7 +25,9 @@ export default function BSDetector() {
             </ul>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#install" className="btn-primary">Add to Chrome</a>
+              <button type="button" onClick={onOpenAnalyzer} className="btn-primary">
+                Try it now
+              </button>
               <a href="#how-it-works" className="btn-ghost">How it works</a>
             </div>
           </div>

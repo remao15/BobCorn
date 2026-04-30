@@ -17,7 +17,7 @@ const steps = [
   },
 ]
 
-export default function Demo() {
+export default function Demo({ onOpenAnalyzer }) {
   return (
     <section id="demo" className="py-20 md:py-28 bg-bone border-y-2 border-ink">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -46,9 +46,9 @@ export default function Demo() {
         </ol>
 
         <div className="mt-12 flex flex-wrap items-center gap-4">
-          <a href="#install" className="btn-primary">
+          <button type="button" onClick={onOpenAnalyzer} className="btn-primary">
             <PlayIcon /> Run the demo
-          </a>
+          </button>
           <a href="#pricing" className="btn-ghost">
             See the business model →
           </a>

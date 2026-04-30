@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Marquee from './components/Marquee'
@@ -12,26 +13,32 @@ import FAQ from './components/FAQ'
 import CTA from './components/CTA'
 import Sources from './components/Sources'
 import Footer from './components/Footer'
+import EarlyAccessModal from './components/EarlyAccessModal'
 
 export default function App() {
+  const [modalOpen, setModalOpen] = useState(false)
+  const openModal = useCallback(() => setModalOpen(true), [])
+  const closeModal = useCallback(() => setModalOpen(false), [])
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <Navbar onOpenAnalyzer={openModal} />
       <main className="flex-1">
-        <Hero />
+        <Hero onOpenAnalyzer={openModal} />
         <Marquee />
         <Problem />
-        <BSDetector />
+        <BSDetector onOpenAnalyzer={openModal} />
         <SubscriptionAuditor />
         <HowItWorks />
         <BuildStory />
-        <Demo />
-        <Pricing />
+        <Demo onOpenAnalyzer={openModal} />
+        <Pricing onOpenAnalyzer={openModal} />
         <FAQ />
-        <CTA />
+        <CTA onOpenAnalyzer={openModal} />
         <Sources />
       </main>
       <Footer />
+      <EarlyAccessModal open={modalOpen} onClose={closeModal} />
     </div>
   )
 }

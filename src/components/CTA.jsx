@@ -1,4 +1,4 @@
-export default function CTA() {
+export default function CTA({ onOpenAnalyzer }) {
   return (
     <section id="install" className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -24,11 +24,15 @@ export default function CTA() {
             </div>
 
             <div className="lg:col-span-4 flex flex-col gap-3">
-              <a href="#demo" className="btn-primary text-lg w-full !py-4">
+              <button
+                type="button"
+                onClick={onOpenAnalyzer}
+                className="btn-primary text-lg w-full !py-4"
+              >
                 Run the live demo
-              </a>
-              <a href="https://github.com/heron4gf" className="bg-paper text-ink font-display font-bold px-6 py-4 border-2 border-ink shadow-brutal-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all text-center text-lg">
-                Source on GitHub
+              </button>
+              <a href="#sources" className="bg-paper text-ink font-display font-bold px-6 py-4 border-2 border-ink shadow-brutal-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all text-center text-lg">
+                See our sources
               </a>
               <div className="text-xs font-mono text-ink/70 text-center mt-1">
                 Built in 2 hours · 4 devs · 1 AI agent

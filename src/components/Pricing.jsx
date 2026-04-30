@@ -34,7 +34,7 @@ const tiers = [
   },
 ]
 
-export default function Pricing() {
+export default function Pricing({ onOpenAnalyzer }) {
   return (
     <section id="pricing" className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -89,12 +89,13 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <a
-                href={t.href}
+              <button
+                type="button"
+                onClick={onOpenAnalyzer}
                 className={`mt-8 ${t.accent ? 'btn-acid' : 'btn-primary'}`}
               >
                 {t.cta}
-              </a>
+              </button>
             </div>
           ))}
         </div>
