@@ -12,17 +12,54 @@ function getVerdictIcon(verdict) {
   return '\u2705';
 }
 
-function renderIssues(issues) {
+function renderIssues(issues, highlights) {
   if (!issues?.length) return '<div style="color:#555;font-size:12px">No issues found.</div>';
-  return issues.map(issue => `
-    <div class="issue">
-      <span class="issue-sev sev-${issue.severity}">${issue.severity}</span>
-      <div>
-        <div class="issue-type">${issue.type}</div>
-        <div class="issue-detail">${issue.detail}</div>
+  
+  function getHighlightInfo(highlightId) {
+    if (!highlightId) return null;
+    const h = highlights?.find(h => h.id === highlightId);
+    return h || null;
+  }
+
+  return issues.map(issue => {
+    const hInfo = getHighlightInfo(issue.highlightId);
+    const pillClass = hInfo?.sentiment === 'positive' ? 'highlight-chip-pos' : 'highlight-chip-neg';
+    const pillText = hInfo?.sentiment === 'positive' ? `\u2713 ${issue.highlightId}` : `\u26A0 ${issue.highlightId}`;
+    
+    return `
+      <div class="issue">
+        <span class="issue-sev sev-${issue.severity}">${issue.severity}</span>
+        <div>
+          <div class="issue-type">${issue.type}</div>
+          <div class="issue-detail">${issue.detail}</div>
+          ${issue.highlightId ? `<span class="highlight-chip ${pillClass}" data-highlight-id="${issue.highlightId}">${pillText} See on page \u2192</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderHighlights(highlights) {
+  if (!highlights?.length) return '';
+  
+  return `
+    <div class="section">
+      <div class="section-title">\u2B50 Highlighted Text</div>
+      <div class="highlights-list">
+        ${highlights.map(h => {
+          const pillClass = h.sentiment === 'positive' ? 'highlight-chip-pos' : 'highlight-chip-neg';
+          const pillText = h.sentiment === 'positive' ? `\u2713 ${h.id}` : `\u26A0 ${h.id}`;
+          return `
+            <div class="highlight-item">
+              <span class="highlight-chip ${pillClass}" data-highlight-id="${h.id}">${pillText}</span>
+              <div class="highlight-text">"${h.text}"</div>
+              <div class="highlight-reason">${h.reason}</div>
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
-  `).join('');
+  `;
 }
 
 function renderAlternatives(alts, color) {
@@ -58,13 +95,27 @@ function renderAnalysis(analysis) {
     </div>
     <div class="section">
       <div class="section-title">\u26A0\uFE0F Issues Found</div>
-      ${renderIssues(pc.issues)}
+      ${renderIssues(pc.issues, pc.highlights)}
     </div>
+    ${renderHighlights(pc.highlights)}
     <div class="section">
       <div class="section-title">\u2705 Better Alternatives</div>
       ${renderAlternatives(analysis.alternatives, color)}
     </div>
   `;
+
+  // Attach click handlers for highlight chips
+  document.querySelectorAll('.highlight-chip[data-highlight-id]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const id = chip.dataset.highlightId;
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, { type: 'SCROLL_TO_HIGHLIGHT', id });
+        }
+      });
+    });
+    chip.style.cursor = 'pointer';
+  });
 }
 
 function renderState(icon, message) {
