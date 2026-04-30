@@ -1,5 +1,5 @@
 /**
- * CartCop Content Script
+ * AdCheck Content Script
  * Runs local heuristics to detect e-commerce product pages.
  * Highlights suspicious/positive text snippets from analysis.
  */
@@ -169,13 +169,13 @@
       return;
     }
     const payload = extractPageData();
-    console.log('[CartCop] Product page detected:', payload.title, '| Price:', payload.price);
+    console.log('[AdCheck] Product page detected:', payload.title, '| Price:', payload.price);
     chrome.runtime.sendMessage({ type: 'PRODUCT_DETECTED', payload });
   }
 
   // ==================== HIGHLIGHT SYSTEM ====================
 
-  const HIGHLIGHT_CLASS = 'cartcop-highlight';
+  const HIGHLIGHT_CLASS = 'adcheck-highlight';
   const TOLERANCE = 5; // Character tolerance for fuzzy matching
 
   function removeHighlights() {
@@ -188,36 +188,36 @@
       parent.removeChild(el);
     });
     // Remove injected styles
-    const style = document.getElementById('cartcop-highlight-styles');
+    const style = document.getElementById('adcheck-highlight-styles');
     if (style) style.remove();
-    console.log('[CartCop] Highlights removed');
+    console.log('[AdCheck] Highlights removed');
   }
 
   function injectStyles() {
-    if (document.getElementById('cartcop-highlight-styles')) return;
+    if (document.getElementById('adcheck-highlight-styles')) return;
     const style = document.createElement('style');
-    style.id = 'cartcop-highlight-styles';
+    style.id = 'adcheck-highlight-styles';
     style.textContent = `
-      .cartcop-highlight {
+      .adcheck-highlight {
         position: relative;
         border-radius: 3px;
         padding: 1px 4px;
         cursor: pointer;
         transition: background-color 0.2s ease;
       }
-      .cartcop-highlight:hover {
+      .adcheck-highlight:hover {
         outline: 2px solid currentColor;
       }
-      .cartcop-negative-high {
+      .adcheck-negative-high {
         background-color: rgba(255, 68, 68, 0.2);
       }
-      .cartcop-negative-medium {
+      .adcheck-negative-medium {
         background-color: rgba(255, 170, 0, 0.15);
       }
-      .cartcop-positive {
+      .adcheck-positive {
         background-color: rgba(0, 204, 102, 0.15);
       }
-      .cartcop-pill {
+      .adcheck-pill {
         position: absolute;
         top: -8px;
         right: -4px;
@@ -230,12 +230,12 @@
         z-index: 999999;
         pointer-events: none;
       }
-      .cartcop-pill-neg { background-color: #ff4444; }
-      .cartcop-pill-pos { background-color: #00cc66; }
-      .cartcop-highlight.cartcop-pulse {
-        animation: cartcop-pulse 0.6s ease-in-out 2;
+      .adcheck-pill-neg { background-color: #ff4444; }
+      .adcheck-pill-pos { background-color: #00cc66; }
+      .adcheck-highlight.adcheck-pulse {
+        animation: adcheck-pulse 0.6s ease-in-out 2;
       }
-      @keyframes cartcop-pulse {
+      @keyframes adcheck-pulse {
         0%, 100% { outline: 2px solid currentColor; }
         50% { outline: 4px solid currentColor; background-color: rgba(255, 255, 0, 0.3); }
       }
@@ -244,13 +244,13 @@
   }
 
   function getPillClass(sentiment) {
-    return sentiment === 'positive' ? 'cartcop-pill-pos' : 'cartcop-pill-neg';
+    return sentiment === 'positive' ? 'adcheck-pill-pos' : 'adcheck-pill-neg';
   }
 
   function getHighlightClass(highlight) {
-    if (highlight.sentiment === 'positive') return 'cartcop-positive';
-    if (highlight.severity === 'high') return 'cartcop-negative-high';
-    return 'cartcop-negative-medium';
+    if (highlight.sentiment === 'positive') return 'adcheck-positive';
+    if (highlight.severity === 'high') return 'adcheck-negative-high';
+    return 'adcheck-negative-medium';
   }
 
   function findTextInNodes(searchText) {
@@ -273,7 +273,7 @@
           if (parent.classList.contains(HIGHLIGHT_CLASS)) {
             return NodeFilter.FILTER_REJECT;
           }
-          if (parent.id && parent.id.startsWith('cartcop-')) {
+          if (parent.id && parent.id.startsWith('adcheck-')) {
             return NodeFilter.FILTER_REJECT;
           }
           const text = node.textContent.toLowerCase();
@@ -307,7 +307,7 @@
       if (['script', 'style', 'noscript', 'head', 'iframe'].includes(el.tagName.toLowerCase())) {
         continue;
       }
-      if (el.classList.contains(HIGHLIGHT_CLASS) || (el.id && el.id.startsWith('cartcop-'))) {
+      if (el.classList.contains(HIGHLIGHT_CLASS) || (el.id && el.id.startsWith('adcheck-'))) {
         continue;
       }
       const innerText = el.innerText || '';
@@ -348,7 +348,7 @@
   function applyHighlight(highlight) {
     const { nodes, method } = findTextInNodes(highlight.text);
     if (nodes.length === 0) {
-      console.warn(`[CartCop] Could not find highlight text: "${highlight.text}"`);
+      console.warn(`[AdCheck] Could not find highlight text: "${highlight.text}"`);
       return false;
     }
 
@@ -358,11 +358,11 @@
       // Wrap the entire element
       const el = nodes[0];
       const mark = document.createElement('mark');
-      mark.id = `cartcop-${highlight.id}`;
+      mark.id = `adcheck-${highlight.id}`;
       mark.className = `${HIGHLIGHT_CLASS} ${getHighlightClass(highlight)}`;
       
       const pill = document.createElement('span');
-      pill.className = `cartcop-pill ${getPillClass(highlight.sentiment)}`;
+      pill.className = `adcheck-pill ${getPillClass(highlight.sentiment)}`;
       pill.textContent = highlight.sentiment === 'positive' ? `\u2713 ${highlight.id}` : `\u26A0 ${highlight.id}`;
       mark.appendChild(pill);
       mark.appendChild(document.createTextNode(el.innerText));
@@ -381,11 +381,11 @@
         const after = text.substring(idx + highlight.text.length);
 
         const mark = document.createElement('mark');
-        mark.id = `cartcop-${highlight.id}`;
+        mark.id = `adcheck-${highlight.id}`;
         mark.className = `${HIGHLIGHT_CLASS} ${getHighlightClass(highlight)}`;
 
         const pill = document.createElement('span');
-        pill.className = `cartcop-pill ${getPillClass(highlight.sentiment)}`;
+        pill.className = `adcheck-pill ${getPillClass(highlight.sentiment)}`;
         pill.textContent = highlight.sentiment === 'positive' ? `\u2713 ${highlight.id}` : `\u26A0 ${highlight.id}`;
 
         const parent = textNode.parentNode;
@@ -401,7 +401,7 @@
       }
     }
 
-    console.log(`[CartCop] Applied highlight: ${highlight.id}`);
+    console.log(`[AdCheck] Applied highlight: ${highlight.id}`);
     return true;
   }
 
@@ -412,24 +412,24 @@
     for (const highlight of highlights) {
       if (applyHighlight(highlight)) applied++;
     }
-    console.log(`[CartCop] Applied ${applied}/${highlights.length} highlights`);
+    console.log(`[AdCheck] Applied ${applied}/${highlights.length} highlights`);
   }
 
   function scrollToHighlight(id) {
-    const el = document.getElementById(`cartcop-${id}`);
+    const el = document.getElementById(`adcheck-${id}`);
     if (!el) {
-      console.warn(`[CartCop] Highlight not found: ${id}`);
+      console.warn(`[AdCheck] Highlight not found: ${id}`);
       return;
     }
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    el.classList.add('cartcop-pulse');
-    setTimeout(() => el.classList.remove('cartcop-pulse'), 1200);
+    el.classList.add('adcheck-pulse');
+    setTimeout(() => el.classList.remove('adcheck-pulse'), 1200);
   }
 
   function pollForHighlights() {
-    chrome.storage.session.get(['cartcop_status', 'cartcop_analysis'], result => {
-      if (result.cartcop_status === 'done' && result.cartcop_analysis?.pageComments?.highlights) {
-        applyHighlights(result.cartcop_analysis.pageComments.highlights);
+    chrome.storage.session.get(['adcheck_status', 'adcheck_analysis'], result => {
+      if (result.adcheck_status === 'done' && result.adcheck_analysis?.pageComments?.highlights) {
+        applyHighlights(result.adcheck_analysis.pageComments.highlights);
       }
     });
   }

@@ -1,5 +1,5 @@
 /**
- * CartCop Prompts
+ * AdCheck Prompts
  * Edit these to tune the AI pipeline behavior.
  */
 

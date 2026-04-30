@@ -1,12 +1,12 @@
 /**
- * CartCop Background Service Worker
+ * AdCheck Background Service Worker
  * Runs two parallel Gemini pipelines: page analysis (offline) + alternatives (Tavily-grounded).
  * Also handles persistent storage for Skip & Save and Comparison Mode features.
  */
 
 importScripts('keys.js', 'prompts.js', 'utils.js');
 
-const STORAGE_KEY = 'cartcop';
+const STORAGE_KEY = 'adcheck';
 const MAX_PRODUCTS = 100;
 
 const MODEL = 'qwen/qwen3.6-35b-a3b:exacto';
@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
   }
   if (message.type === 'GET_ANALYSIS') {
-    chrome.storage.session.get(['cartcop_status', 'cartcop_analysis', 'cartcop_error'], result => {
+    chrome.storage.session.get(['adcheck_status', 'adcheck_analysis', 'adcheck_error'], result => {
       sendResponse(result);
     });
     return true;
@@ -61,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // ==================== PRODUCT ANALYSIS ====================
 
 async function handleProductAnalysis(payload) {
-  await chrome.storage.session.set({ cartcop_status: 'loading', cartcop_analysis: null, cartcop_error: null });
+  await chrome.storage.session.set({ adcheck_status: 'loading', adcheck_analysis: null, adcheck_error: null });
   setBadge('...', '#888888');
 
   try {
@@ -80,10 +80,10 @@ async function handleProductAnalysis(payload) {
       alternatives
     };
 
-    await chrome.storage.session.set({ cartcop_status: 'done', cartcop_analysis: analysis });
+    await chrome.storage.session.set({ adcheck_status: 'done', adcheck_analysis: analysis });
     setBadge('\u2713', '#00cc66');
   } catch (err) {
-    await chrome.storage.session.set({ cartcop_status: 'error', cartcop_error: err.message });
+    await chrome.storage.session.set({ adcheck_status: 'error', adcheck_error: err.message });
     setBadge('!', '#ff4444');
   }
 }
@@ -111,7 +111,7 @@ async function callModel(prompt, apiKey) {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://github.com/remao15/BobCorn',
-      'X-Title': 'CartCop BS Detector'
+      'X-Title': 'AdCheck'
     },
     body: JSON.stringify({
       model: MODEL,
@@ -171,7 +171,7 @@ function setBadge(text, color) {
 // ==================== PERSISTENT STORAGE LAYER ====================
 
 /**
- * Get the full cartcop storage object, initializing if needed.
+ * Get the full adcheck storage object, initializing if needed.
  */
 async function getStorage() {
   return new Promise((resolve) => {
@@ -187,7 +187,7 @@ async function getStorage() {
 }
 
 /**
- * Save the cartcop storage object.
+ * Save the adcheck storage object.
  */
 async function setStorage(data) {
   return new Promise((resolve) => {
