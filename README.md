@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="0.png" alt="CartCop Logo" width="128" height="128">
+  <img src="0.png" alt="AdCheck Logo" width="128" height="128">
 </p>
 
-<h1 align="center">CartCop: BS Detector</h1>
+<h1 align="center">AdCheck: BS Detector</h1>
 
 <p align="center">
   <strong>A browser extension that automatically detects e-commerce product pages and analyzes them in real time.</strong>
@@ -16,7 +16,7 @@
 
 ## Overview
 
-CartCop (also known as **AdCheck**) is a Manifest V3 browser extension that silently monitors the pages you visit. When it detects a product page, it runs two AI pipelines in parallel to:
+AdCheck (also known as **AdCheck**) is a Manifest V3 browser extension that silently monitors the pages you visit. When it detects a product page, it runs two AI pipelines in parallel to:
 
 - **Analyze** the page for BS — inflated claims, shady pricing tactics, weak return policies, and trust issues.
 - **Find** real, grounded alternatives with current prices from across the web.
@@ -77,7 +77,7 @@ const TAVILY_KEY     = 'tvly-YOUR_KEY_HERE';   // https://app.tavily.com
 **Alternatively**, set keys at runtime via the Chrome service worker console:
 
 1. Go to `chrome://extensions`
-2. Find CartCop → click **Inspect service worker**
+2. Find AdCheck → click **Inspect service worker**
 3. Run in the console:
 
 ```js
@@ -100,7 +100,7 @@ chrome.storage.local.set({
 
 1. Navigate to any product page (Amazon, Zalando, MediaMarkt, Shopify stores, etc.)
 2. The extension icon will badge `...` — analysis is running
-3. When it turns `✓`, click the icon to open the CartCop popup
+3. When it turns `✓`, click the icon to open the AdCheck popup
 4. Read the verdict, issues, and alternatives
 
 ---
