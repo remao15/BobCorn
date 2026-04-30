@@ -1,30 +1,25 @@
 {
   "manifest_version": 3,
   "name": "CartCop: BS Detector",
-  "version": "1.0.0",
-  "description": "A brutal, on-the-spot product evaluator. Detects BS on Amazon and pushes verified, superior alternatives.",
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
+  "version": "2.0.0",
+  "description": "Detects BS on any e-commerce page. Flags inconsistencies, bad policies, and surfaces verified alternatives.",
+  "permissions": ["activeTab", "storage", "tabs"],
   "host_permissions": [
-    "https://openrouter.ai/*"
+    "https://openrouter.ai/*",
+    "https://api.tavily.com/*",
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
   },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CartCop BS Detector"
+  },
   "content_scripts": [
     {
-      "matches": [
-        "*://*.amazon.com/*",
-        "*://*.amazon.it/*",
-        "*://*.amazon.co.uk/*",
-        "*://*.amazon.de/*",
-        "*://*.amazon.fr/*"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ]
