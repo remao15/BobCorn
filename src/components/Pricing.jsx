@@ -39,8 +39,7 @@ export default function Pricing() {
     <section id="pricing" className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <span className="tag">Phase 5 · The business model</span>
-          <h2 className="mt-4 font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
+          <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
             Two revenue streams.
             <br />
             Both aligned with the user.

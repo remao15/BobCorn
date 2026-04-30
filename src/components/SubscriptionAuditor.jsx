@@ -8,8 +8,7 @@ export default function SubscriptionAuditor() {
           </div>
 
           <div className="lg:col-span-5 order-1 lg:order-2 lg:sticky lg:top-24">
-            <span className="tag">Phase 2 · The paid layer</span>
-            <h2 className="mt-4 font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
+            <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
               The Subscription
               <br />
               Auditor.
@@ -85,14 +84,20 @@ function Dashboard() {
         <span className="text-xs font-mono text-ink/60">Apr 2026</span>
       </div>
 
-      <div className="p-5 sm:p-6 bg-blood text-paper">
-        <div className="text-[11px] font-mono uppercase tracking-widest opacity-80">
-          Total wasted this year
+      <div className="p-5 sm:p-6 bg-ink text-paper border-b-2 border-ink border-t-[6px] border-t-blood">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono uppercase tracking-widest text-blood font-bold">
+            Total wasted this year
+          </span>
+          <span className="w-1.5 h-1.5 rounded-full bg-blood animate-flash" />
         </div>
-        <div className="mt-1 font-display font-bold text-5xl sm:text-6xl tracking-tight tabular-nums">
-          ${wasted.toFixed(2)}
+        <div
+          className="mt-1 font-display font-black text-5xl sm:text-6xl tracking-tight tabular-nums text-blood"
+          style={{ textShadow: '0 0 28px rgba(255,45,32,0.3)' }}
+        >
+          ${wasted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div className="mt-2 text-sm opacity-90">
+        <div className="mt-2 text-sm text-paper/85">
           Across {subs.filter((s) => s.bad).length} overpriced subscriptions. We can
           fix that today.
         </div>
@@ -107,7 +112,9 @@ function Dashboard() {
       <div className="px-5 sm:px-6 py-4 border-t-2 border-ink bg-bone flex items-center justify-between gap-3">
         <div className="text-xs font-mono text-ink/70">
           3 cancellations queued · est. annual saving{' '}
-          <span className="text-ink font-bold">${wasted.toFixed(0)}</span>
+          <span className="text-ink font-bold">
+            ${Math.round(wasted).toLocaleString('en-US')}
+          </span>
         </div>
         <button className="btn-acid !py-2 !px-4 text-sm">Approve all</button>
       </div>

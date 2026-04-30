@@ -3,8 +3,7 @@ export default function Problem() {
     <section className="py-20 md:py-28 border-b-2 border-ink/10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <span className="tag">Phase 1 · Plan &amp; Analyze</span>
-          <h2 className="mt-4 font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
+          <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
             We started by identifying two problems that cost real money.
           </h2>
           <p className="mt-4 text-lg text-ink/70 leading-relaxed">

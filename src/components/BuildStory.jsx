@@ -1,20 +1,20 @@
 const phases = [
   {
-    n: '03',
+    n: '01',
     label: 'Develop',
     title: 'Built in parallel, shipped in two hours.',
     body: 'Four developers, four branches, one Manifest V3 extension and a static dashboard. We split the work across extension foundation, the BS Detector overlay, mock data, and the subscription dashboard, then merged on a single demo branch.',
     chips: ['Manifest V3', 'Vanilla JS', 'React + Tailwind', 'Mock JSON APIs'],
   },
   {
-    n: '04',
+    n: '02',
     label: 'Test',
     title: 'Validated against live Amazon pages.',
     body: 'We tested the DOM injection on real product pages to confirm the overlay triggers on target URLs without breaking the host site\'s CSS or interactivity. The dismiss flow, the Add-to-Cart path, and the alternative click-throughs all work end to end.',
     chips: ['Live DOM testing', 'Shadow DOM isolation', 'Click-path rehearsed'],
   },
   {
-    n: '05',
+    n: '03',
     label: 'Deploy',
     title: 'A real launch path, not vapourware.',
     body: 'Our shipping plan: publish the extension to the Chrome Web Store, swap the mock JSON files for live Perplexity calls on the detector side, and wire Plaid into the auditor for real bank-linked transaction data. None of this is exotic.',
@@ -28,8 +28,7 @@ export default function BuildStory() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-5 lg:sticky lg:top-24">
-            <span className="tag">Phase 3, 4, 5 · How we built it</span>
-            <h2 className="mt-4 font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
+            <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
               From idea to working prototype in one afternoon.
             </h2>
             <p className="mt-5 text-lg text-ink/70 leading-relaxed">

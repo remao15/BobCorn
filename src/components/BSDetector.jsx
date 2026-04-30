@@ -4,8 +4,7 @@ export default function BSDetector() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-5 lg:sticky lg:top-24">
-            <span className="tag-acid">Phase 2 · Design the solution</span>
-            <h2 className="mt-4 font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
+            <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight leading-[1.05]">
               The BS Detector.
               <br />
               Verdict in 2&nbsp;seconds.
@@ -56,33 +55,39 @@ function Feature({ children }) {
 
 function BadProductCard() {
   return (
-    <div className="card-brutal bg-blood text-paper p-6 sm:p-8 relative overflow-hidden">
-      <div className="text-[11px] font-mono uppercase tracking-widest opacity-80">
-        BS Score
+    <div className="card-brutal bg-ink text-paper p-6 sm:p-8 relative overflow-hidden border-t-[6px] border-blood">
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-mono uppercase tracking-widest text-blood font-bold">
+          BS Score
+        </span>
+        <span className="w-1.5 h-1.5 rounded-full bg-blood animate-flash" />
       </div>
       <div className="mt-1 flex items-end gap-4">
-        <div className="font-display font-bold text-[8rem] sm:text-[10rem] leading-[0.8] tracking-tight">
+        <div
+          className="font-display font-black text-[8rem] sm:text-[10rem] leading-[0.8] tracking-tight text-blood"
+          style={{ textShadow: '0 0 32px rgba(255,45,32,0.35)' }}
+        >
           92
         </div>
         <div className="pb-3 sm:pb-4">
           <div className="font-display font-bold text-2xl sm:text-3xl leading-tight">
             Probably trash.
           </div>
-          <div className="text-xs font-mono uppercase tracking-wider opacity-70 mt-1">
+          <div className="text-xs font-mono uppercase tracking-wider text-paper/60 mt-1">
             verdict in 1.8s
           </div>
         </div>
       </div>
 
-      <div className="mt-6 pt-5 border-t-2 border-paper/25">
-        <div className="text-[11px] font-mono uppercase tracking-widest opacity-80">
+      <div className="mt-6 pt-5 border-t-2 border-paper/15">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-blood font-bold">
           Brutal truth
         </div>
-        <p className="mt-2 text-base sm:text-lg leading-snug font-medium">
+        <p className="mt-2 text-base sm:text-lg leading-snug text-paper">
           Battery dies in 4 months. 71% of 5-star reviews posted within an
           11-day window from accounts under 30 days old.
         </p>
-        <div className="mt-4 text-xs font-mono opacity-60 truncate">
+        <div className="mt-4 text-xs font-mono text-paper/45 truncate">
           on: "PRO MAX Bluetooth Earbuds 5.4: IPX9 Waterproof…"
         </div>
       </div>

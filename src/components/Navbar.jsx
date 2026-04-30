@@ -44,11 +44,8 @@ export default function Navbar() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <a href="https://github.com/heron4gf" className="text-sm font-bold text-ink hover:underline decoration-2 underline-offset-4">
-              GitHub
-            </a>
             <a href="#demo" className="btn-acid !py-2 !px-4 text-sm">
-              Watch demo
+              Early Access
             </a>
           </div>
           <button
@@ -75,7 +72,7 @@ export default function Navbar() {
               </a>
             ))}
             <a href="#demo" className="btn-acid !py-2 !px-4 text-sm w-fit">
-              Watch demo
+              Early Access
             </a>
           </div>
         )}
